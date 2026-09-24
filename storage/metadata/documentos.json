@@ -1,0 +1,19 @@
+[
+  {
+    "id": 1,
+    "nome_original": "teste.txt",
+    "nome_armazenado": "1_teste.txt",
+    "extensao": ".txt",
+    "tipo_mime": "text/plain",
+    "tamanho": 17,
+    "categoria": "academico",
+    "descricao": "Arquivo de teste",
+    "data_upload": "2026-09-23T21:13:15",
+    "sha256": "66690828e56a5f43d36843c11accbd0687b296d9839af584aae86b234aecf013",
+    "aluno": "Ian de Freitas",
+    "matricula": "536147",
+    "curso": "Sistemas de Informação",
+    "semestre": "2026.1",
+    "tipo_documento": "historico"
+  }
+]
