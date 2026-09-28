@@ -68,6 +68,9 @@ coverage.xml
 .hypothesis/
 .mypy_cache/
 .ruff_cache/
+__pycache__/
+*.py[cod]
+/app/__pycache__/*
 
 # =========================================
 # Builds, Pacotes e Distribuição
@@ -88,3 +91,7 @@ dist/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+__pycache__/
+*.py[cod]
+.venv/
