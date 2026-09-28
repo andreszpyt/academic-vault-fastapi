@@ -1,9 +1,9 @@
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Query
 from fastapi.responses import FileResponse
 from typing import Optional
 
 from app import storage
-from app.models import Documento, DocumentoUpdate
+from app.models import Documento, DocumentoUpdate, Estatisticas
 from app.logger import logger
 
 router = APIRouter(prefix="/documentos", tags=["Documentos"])
@@ -39,12 +39,36 @@ async def upload_documento(
     return doc
 
 
-# F2 — Listagem
+# F2 e F7 — Listagem e Filtragem
 @router.get("/", response_model=list[Documento])
-def listar_documentos():
-    docs = storage.listar_documentos()
+def listar_documentos(
+    categoria:      Optional[str] = Query(None, description="Filtra por categoria"),
+    extensao:       Optional[str] = Query(None, description="Filtra por extensão (ex: .pdf, .txt)"),
+    aluno:          Optional[str] = Query(None, description="Busca parcial por nome do aluno"),
+    matricula:      Optional[str] = Query(None, description="Filtra por matrícula"),
+    semestre:       Optional[str] = Query(None, description="Filtra por semestre (ex: 2026.1)"),
+    tipo_documento: Optional[str] = Query(None, description="Filtra por tipo de documento"),
+    curso:          Optional[str] = Query(None, description="Busca parcial por curso"),
+):
+    docs = storage.listar_documentos(
+        categoria=categoria,
+        extensao=extensao,
+        aluno=aluno,
+        matricula=matricula,
+        semestre=semestre,
+        tipo_documento=tipo_documento,
+        curso=curso,
+    )
     logger.info(f"LISTAGEM total={len(docs)}")
     return docs
+
+
+# F8 — Estatísticas do Cofre
+@router.get("/estatisticas", response_model=Estatisticas)
+def obter_estatisticas():
+    stats = storage.obter_estatisticas()
+    logger.info(f"ESTATISTICAS total_documentos={stats['total_documentos']}")
+    return stats
 
 
 # F3 — Consulta por ID

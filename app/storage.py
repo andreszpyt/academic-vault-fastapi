@@ -176,3 +176,54 @@ def excluir_documento(id_: int) -> bool:
 
 def caminho_fisico(doc: Documento) -> Path:
     return DIR_DOCUMENTOS / doc.nome_armazenado
+
+
+# ── Estatísticas do cofre ────────────────────────────────────────────────────
+
+def _formatar_tamanho(bytes_: int) -> str:
+    """Formata o tamanho em bytes para representação legível (B, KB, MB, GB)."""
+    if bytes_ < 1024:
+        return f"{bytes_} B"
+    elif bytes_ < 1024 * 1024:
+        return f"{bytes_ / 1024:.2f} KB"
+    elif bytes_ < 1024 * 1024 * 1024:
+        return f"{bytes_ / (1024 * 1024):.2f} MB"
+    return f"{bytes_ / (1024 * 1024 * 1024):.2f} GB"
+
+
+def obter_estatisticas() -> dict:
+    """Calcula estatísticas consolidadas sobre os documentos persistidos."""
+    docs = _ler_documentos()
+
+    total_documentos       = len(docs)
+    espaco_utilizado_bytes = sum(d.get("tamanho", 0) for d in docs)
+
+    por_extensao:       dict[str, int] = {}
+    por_categoria:      dict[str, int] = {}
+    por_tipo_documento: dict[str, int] = {}
+    por_curso:          dict[str, int] = {}
+    por_semestre:       dict[str, int] = {}
+
+    for d in docs:
+        ext   = d.get("extensao", "")
+        cat   = d.get("categoria", "")
+        tipo  = d.get("tipo_documento", "")
+        curso = d.get("curso", "")
+        sem   = d.get("semestre", "")
+
+        if ext:   por_extensao[ext]        = por_extensao.get(ext, 0) + 1
+        if cat:   por_categoria[cat]       = por_categoria.get(cat, 0) + 1
+        if tipo:  por_tipo_documento[tipo] = por_tipo_documento.get(tipo, 0) + 1
+        if curso: por_curso[curso]        = por_curso.get(curso, 0) + 1
+        if sem:   por_semestre[sem]        = por_semestre.get(sem, 0) + 1
+
+    return {
+        "total_documentos":           total_documentos,
+        "espaco_utilizado_bytes":     espaco_utilizado_bytes,
+        "espaco_utilizado_formatado": _formatar_tamanho(espaco_utilizado_bytes),
+        "por_extensao":               por_extensao,
+        "por_categoria":              por_categoria,
+        "por_tipo_documento":         por_tipo_documento,
+        "por_curso":                  por_curso,
+        "por_semestre":               por_semestre,
+    }

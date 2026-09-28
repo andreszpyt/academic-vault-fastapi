@@ -42,3 +42,14 @@ class DocumentoUpdate(BaseModel):
     curso:          Optional[str]           = None
     semestre:       Optional[str]           = None
     tipo_documento: Optional[TipoDocumento] = None
+
+
+class Estatisticas(BaseModel):
+    total_documentos:           int
+    espaco_utilizado_bytes:     int
+    espaco_utilizado_formatado: str
+    por_extensao:               dict[str, int]
+    por_categoria:              dict[str, int]
+    por_tipo_documento:         dict[str, int]
+    por_curso:                  dict[str, int]
+    por_semestre:               dict[str, int]

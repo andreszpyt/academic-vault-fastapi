@@ -1,11 +1,73 @@
-# Test your FastAPI endpoints
-
+### Root
 GET http://127.0.0.1:8000/
 Accept: application/json
 
-###
+### F1 — Upload de Documento
+POST http://127.0.0.1:8000/documentos/
+Content-Type: multipart/form-data; boundary=WebAppBoundary
 
-GET http://127.0.0.1:8000/hello/User
+--WebAppBoundary
+Content-Disposition: form-data; name="arquivo"; filename="artigo_exemplo.txt"
+Content-Type: text/plain
+
+Conteudo de teste do artigo academico sobre persistencia de dados.
+--WebAppBoundary
+Content-Disposition: form-data; name="categoria"
+
+academico
+--WebAppBoundary
+Content-Disposition: form-data; name="aluno"
+
+Lucas Martins
+--WebAppBoundary
+Content-Disposition: form-data; name="matricula"
+
+512345
+--WebAppBoundary
+Content-Disposition: form-data; name="curso"
+
+Engenharia de Software
+--WebAppBoundary
+Content-Disposition: form-data; name="semestre"
+
+2026.1
+--WebAppBoundary
+Content-Disposition: form-data; name="tipo_documento"
+
+trabalho
+--WebAppBoundary
+Content-Disposition: form-data; name="descricao"
+
+Trabalho sobre persistência em arquivos JSON
+--WebAppBoundary--
+
+### F2 — Listagem Geral
+GET http://127.0.0.1:8000/documentos/
 Accept: application/json
 
-###
+### F7 — Filtragem Combinada
+GET http://127.0.0.1:8000/documentos/?curso=Engenharia&tipo_documento=trabalho
+Accept: application/json
+
+### F8 — Estatísticas do Cofre
+GET http://127.0.0.1:8000/documentos/estatisticas
+Accept: application/json
+
+### F3 — Consulta por ID
+GET http://127.0.0.1:8000/documentos/1
+Accept: application/json
+
+### F4 — Download de Arquivo
+GET http://127.0.0.1:8000/documentos/1/download
+
+### F5 — Atualização de Metadados
+PUT http://127.0.0.1:8000/documentos/1
+Content-Type: application/json
+
+{
+  "descricao": "Descrição atualizada via PUT",
+  "semestre": "2026.2"
+}
+
+### F6 — Exclusão de Documento
+DELETE http://127.0.0.1:8000/documentos/1
