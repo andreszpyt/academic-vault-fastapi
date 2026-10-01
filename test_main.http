@@ -69,5 +69,13 @@ Content-Type: application/json
   "semestre": "2026.2"
 }
 
+### F9 — Integridade Individual
+GET http://127.0.0.1:8000/documentos/1/integridade
+Accept: application/json
+
+### F10 — Integridade Global
+GET http://127.0.0.1:8000/integridade
+Accept: application/json
+
 ### F6 — Exclusão de Documento
 DELETE http://127.0.0.1:8000/documentos/1

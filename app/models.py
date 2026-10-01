@@ -53,3 +53,28 @@ class Estatisticas(BaseModel):
     por_tipo_documento:         dict[str, int]
     por_curso:                  dict[str, int]
     por_semestre:               dict[str, int]
+
+
+class IntegridadeIndividual(BaseModel):
+    id:            int
+    nome_original: str
+    hash_original: str
+    hash_atual:    Optional[str] = None
+    integro:       bool
+    status:        str
+
+
+class DetalheIntegridade(BaseModel):
+    id:            int
+    nome_original: str
+    status:        str
+    hash_original: str
+    hash_atual:    Optional[str] = None
+
+
+class IntegridadeGlobal(BaseModel):
+    total_verificados:        int
+    total_integros:           int
+    total_alterados:          int
+    arquivos_nao_localizados: int
+    detalhes:                 list[DetalheIntegridade]

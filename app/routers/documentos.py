@@ -3,7 +3,7 @@ from fastapi.responses import FileResponse
 from typing import Optional
 
 from app import storage
-from app.models import Documento, DocumentoUpdate, Estatisticas
+from app.models import Documento, DocumentoUpdate, Estatisticas, IntegridadeIndividual
 from app.logger import logger
 
 router = APIRouter(prefix="/documentos", tags=["Documentos"])
@@ -69,6 +69,16 @@ def obter_estatisticas():
     stats = storage.obter_estatisticas()
     logger.info(f"ESTATISTICAS total_documentos={stats['total_documentos']}")
     return stats
+
+
+# F9 — Verificação de Integridade Individual
+@router.get("/{id}/integridade", response_model=IntegridadeIndividual)
+def verificar_integridade(id: int):
+    resultado = storage.verificar_integridade_documento(id)
+    if not resultado:
+        logger.warning(f"DOCUMENTO_NAO_ENCONTRADO id={id}")
+        raise HTTPException(status_code=404, detail="Documento não encontrado.")
+    return resultado
 
 
 # F3 — Consulta por ID

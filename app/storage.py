@@ -227,3 +227,89 @@ def obter_estatisticas() -> dict:
         "por_curso":                  por_curso,
         "por_semestre":               por_semestre,
     }
+
+
+# ── Verificação de Integridade SHA-256 ────────────────────────────────────────
+
+def verificar_integridade_documento(id_: int) -> dict | None:
+    """Verifica a integridade de um documento específico recalculando o SHA-256 do arquivo físico."""
+    doc = buscar_por_id(id_)
+    if not doc:
+        return None
+
+    caminho = caminho_fisico(doc)
+    if not caminho.exists():
+        logger.error(f"INTEGRIDADE_ARQUIVO_AUSENTE id={id_} arquivo={doc.nome_armazenado}")
+        return {
+            "id":            doc.id,
+            "nome_original": doc.nome_original,
+            "hash_original": doc.sha256,
+            "hash_atual":    None,
+            "integro":       False,
+            "status":        "AUSENTE",
+        }
+
+    hash_atual = calcular_sha256(caminho)
+    integro    = (hash_atual == doc.sha256)
+
+    if integro:
+        logger.info(f"INTEGRIDADE_OK id={id_} arquivo={doc.nome_original}")
+    else:
+        logger.warning(
+            f"INTEGRIDADE_FALHOU id={id_} arquivo={doc.nome_original} "
+            f"hash_esperado={doc.sha256} hash_encontrado={hash_atual}"
+        )
+
+    return {
+        "id":            doc.id,
+        "nome_original": doc.nome_original,
+        "hash_original": doc.sha256,
+        "hash_atual":    hash_atual,
+        "integro":       integro,
+        "status":        "INTEGRO" if integro else "ALTERADO",
+    }
+
+
+def verificar_integridade_global() -> dict:
+    """Varre todos os documentos persistidos e valida a integridade física de cada um."""
+    docs = _ler_documentos()
+
+    total_verificados        = len(docs)
+    total_integros           = 0
+    total_alterados          = 0
+    arquivos_nao_localizados = 0
+    detalhes                 = []
+
+    for d in docs:
+        doc_id = d["id"]
+        res = verificar_integridade_documento(doc_id)
+        if not res:
+            continue
+
+        detalhes.append({
+            "id":            res["id"],
+            "nome_original": res["nome_original"],
+            "status":        res["status"],
+            "hash_original": res["hash_original"],
+            "hash_atual":    res["hash_atual"],
+        })
+
+        if res["status"] == "INTEGRO":
+            total_integros += 1
+        elif res["status"] == "ALTERADO":
+            total_alterados += 1
+        elif res["status"] == "AUSENTE":
+            arquivos_nao_localizados += 1
+
+    logger.info(
+        f"INTEGRIDADE_GLOBAL total={total_verificados} integros={total_integros} "
+        f"alterados={total_alterados} ausentes={arquivos_nao_localizados}"
+    )
+
+    return {
+        "total_verificados":        total_verificados,
+        "total_integros":           total_integros,
+        "total_alterados":          total_alterados,
+        "arquivos_nao_localizados": arquivos_nao_localizados,
+        "detalhes":                 detalhes,
+    }
