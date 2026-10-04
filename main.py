@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import documentos, integridade
+from app.routers import documentos, integridade, exportacoes, backup
 from app.logger import logger
 
 app = FastAPI(
@@ -10,6 +10,8 @@ app = FastAPI(
 
 app.include_router(documentos.router)
 app.include_router(integridade.router)
+app.include_router(exportacoes.router)
+app.include_router(backup.router)
 
 logger.info("INICIALIZACAO sistema iniciado")
 

@@ -78,3 +78,8 @@ class IntegridadeGlobal(BaseModel):
     total_alterados:          int
     arquivos_nao_localizados: int
     detalhes:                 list[DetalheIntegridade]
+
+class ItemBackup(BaseModel):
+    arquivo:   str
+    tamanho:   int
+    criado_em: str
