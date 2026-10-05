@@ -15,9 +15,11 @@ app.include_router(backup.router)
 
 logger.info("INICIALIZACAO sistema iniciado")
 
-
 @app.get("/")
 def root():
+    # SUA IMPLEMENTAÇÃO: A linha abaixo cria o fluxo de logs registrando o acesso!
+    logger.info("ACESSO: Usuario acessou a rota raiz do sistema")
+    
     return {
         "sistema": "Cofre de Documentos Acadêmicos",
         "versao": "1.0.0",
