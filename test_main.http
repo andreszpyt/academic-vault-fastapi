@@ -77,5 +77,26 @@ Accept: application/json
 GET http://127.0.0.1:8000/integridade
 Accept: application/json
 
+### F13 — Exportação CSV
+GET http://127.0.0.1:8000/exportar/csv
+
+### F13 — Exportação XML
+GET http://127.0.0.1:8000/exportar/xml?semestre=2026.1
+
+### F14 — Criar Backup Geral
+POST http://127.0.0.1:8000/backup
+Accept: application/json
+
+### F14 — Criar Backup Seletivo por Curso
+POST http://127.0.0.1:8000/backup?curso=Engenharia
+Accept: application/json
+
+### F15 — Listar Backups
+GET http://127.0.0.1:8000/backups
+Accept: application/json
+
+### F15 — Download de Backup
+GET http://127.0.0.1:8000/backups/backup_2026-10-06_1404.zip
+
 ### F6 — Exclusão de Documento
 DELETE http://127.0.0.1:8000/documentos/1

@@ -1,9 +1,3 @@
-"""
-Script de Seed para o Cofre Digital de Documentos Acadêmicos.
-Gera 16 documentos acadêmicos físicos em storage/documentos/ e popula storage/metadata/documentos.json.
-Atende aos requisitos de diversidade de extensões, categorias, tipos e cursos.
-"""
-
 import hashlib
 import io
 import json
@@ -25,7 +19,6 @@ def calcular_sha256(conteudo: bytes) -> str:
 
 
 def gerar_pdf(titulo: str, subtitulo: str, autor: str, instituicao: str = "UFC - Campus Quixada") -> bytes:
-    """Gera um arquivo PDF binário 1.4 válido."""
     stream_content = (
         f"BT\n"
         f"/F1 16 Tf\n"
@@ -74,7 +67,6 @@ def gerar_pdf(titulo: str, subtitulo: str, autor: str, instituicao: str = "UFC -
 
 
 def gerar_docx(titulo: str, autor: str, conteudo_texto: str) -> bytes:
-    """Gera um arquivo DOCX binário válido (formato OpenXML / ZIP)."""
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
         content_types = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
