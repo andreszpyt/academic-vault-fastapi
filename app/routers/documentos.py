@@ -45,19 +45,29 @@ def listar_documentos(
     categoria:      Optional[str] = Query(None, description="Filtra por categoria"),
     extensao:       Optional[str] = Query(None, description="Filtra por extensão (ex: .pdf, .txt)"),
     aluno:          Optional[str] = Query(None, description="Busca parcial por nome do aluno"),
+    autor:          Optional[str] = Query(None, description="Alias para busca por autor/aluno"),
     matricula:      Optional[str] = Query(None, description="Filtra por matrícula"),
     semestre:       Optional[str] = Query(None, description="Filtra por semestre (ex: 2026.1)"),
+    ano:            Optional[str] = Query(None, description="Filtra por ano (ex: 2026)"),
+    ano_publicacao: Optional[str] = Query(None, description="Alias para busca por ano"),
     tipo_documento: Optional[str] = Query(None, description="Filtra por tipo de documento"),
     curso:          Optional[str] = Query(None, description="Busca parcial por curso"),
+    palavra_chave:  Optional[str] = Query(None, description="Busca textual em nome, descrição e tags"),
+    termo:          Optional[str] = Query(None, description="Busca textual geral"),
 ):
     docs = storage.listar_documentos(
         categoria=categoria,
         extensao=extensao,
         aluno=aluno,
+        autor=autor,
         matricula=matricula,
         semestre=semestre,
+        ano=ano,
+        ano_publicacao=ano_publicacao,
         tipo_documento=tipo_documento,
         curso=curso,
+        palavra_chave=palavra_chave,
+        termo=termo,
     )
     logger.info(f"LISTAGEM total={len(docs)}")
     return docs

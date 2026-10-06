@@ -122,21 +122,58 @@ def listar_documentos(
     categoria:      str | None = None,
     extensao:       str | None = None,
     aluno:          str | None = None,
+    autor:          str | None = None,
     matricula:      str | None = None,
     semestre:       str | None = None,
+    ano:            str | None = None,
+    ano_publicacao: str | None = None,
     tipo_documento: str | None = None,
     curso:          str | None = None,
+    palavra_chave:  str | None = None,
+    termo:          str | None = None,
 ) -> list[Documento]:
     docs = _ler_documentos()
     resultado = []
+
+    busca_aluno = aluno or autor
+    busca_ano = ano or ano_publicacao
+    busca_termo = palavra_chave or termo
+
     for d in docs:
-        if categoria      and d.get("categoria")      != categoria:                        continue
-        if extensao       and d.get("extensao")       != f".{extensao.lstrip('.')}":      continue
-        if aluno          and aluno.lower()          not in d.get("aluno", "").lower():    continue
-        if matricula      and d.get("matricula")      != matricula:                        continue
-        if semestre       and d.get("semestre")       != semestre:                         continue
-        if tipo_documento and d.get("tipo_documento") != tipo_documento:                   continue
-        if curso          and curso.lower()          not in d.get("curso", "").lower():    continue
+        if categoria and d.get("categoria", "").lower() != categoria.lower():
+            continue
+        if extensao:
+            ext_buscada = f".{extensao.lstrip('.').lower()}"
+            if d.get("extensao", "").lower() != ext_buscada:
+                continue
+        if busca_aluno and busca_aluno.lower() not in d.get("aluno", "").lower():
+            continue
+        if matricula and d.get("matricula", "").lower() != matricula.lower():
+            continue
+        if semestre and d.get("semestre", "").lower() != semestre.lower():
+            continue
+        if busca_ano:
+            ano_str = str(busca_ano)
+            sem = d.get("semestre", "")
+            data_up = d.get("data_upload", "")
+            if ano_str not in sem and not data_up.startswith(ano_str):
+                continue
+        if tipo_documento and str(d.get("tipo_documento", "")).lower() != tipo_documento.lower():
+            continue
+        if curso and curso.lower() not in d.get("curso", "").lower():
+            continue
+        if busca_termo:
+            termo_lower = busca_termo.lower()
+            campos_texto = [
+                d.get("nome_original", ""),
+                d.get("descricao", "") or "",
+                d.get("aluno", ""),
+                d.get("curso", ""),
+                d.get("categoria", ""),
+            ]
+            if not any(termo_lower in campo.lower() for campo in campos_texto):
+                continue
+
         resultado.append(Documento(**d))
     return resultado
 

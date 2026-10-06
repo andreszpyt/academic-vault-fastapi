@@ -45,8 +45,16 @@ Trabalho sobre persistência em arquivos JSON
 GET http://127.0.0.1:8000/documentos/
 Accept: application/json
 
-### F7 — Filtragem Combinada
+### F7 — Filtragem Combinada (Curso e Tipo)
 GET http://127.0.0.1:8000/documentos/?curso=Engenharia&tipo_documento=trabalho
+Accept: application/json
+
+### F7 — Filtragem por Autor/Aluno e Ano
+GET http://127.0.0.1:8000/documentos/?autor=Lucas&ano=2026
+Accept: application/json
+
+### F7 — Pesquisa por Palavra-Chave / Termo
+GET http://127.0.0.1:8000/documentos/?palavra_chave=persistencia
 Accept: application/json
 
 ### F8 — Estatísticas do Cofre
