@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import documentos, integridade, exportacoes, backup
+from app.routers import documentos, integridade, exportacoes, backup, estatisticas
 from app.logger import logger
 
 app = FastAPI(
@@ -12,14 +12,13 @@ app.include_router(documentos.router)
 app.include_router(integridade.router)
 app.include_router(exportacoes.router)
 app.include_router(backup.router)
+app.include_router(estatisticas.router)
 
 logger.info("INICIALIZACAO sistema iniciado")
 
 @app.get("/")
 def root():
-    # SUA IMPLEMENTAÇÃO: A linha abaixo cria o fluxo de logs registrando o acesso!
     logger.info("ACESSO: Usuario acessou a rota raiz do sistema")
-    
     return {
         "sistema": "Cofre de Documentos Acadêmicos",
         "versao": "1.0.0",
