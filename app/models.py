@@ -1,16 +1,6 @@
-from pydantic import BaseModel
+from datetime import datetime
 from typing import Optional
-from enum import Enum
-
-
-class TipoDocumento(str, Enum):
-    historico = "historico"
-    certificado = "certificado"
-    declaracao = "declaracao"
-    comprovante = "comprovante"
-    trabalho = "trabalho"
-    matricula = "matricula"
-    outro = "outro"
+from pydantic import BaseModel
 
 
 class Documento(BaseModel):
@@ -22,13 +12,13 @@ class Documento(BaseModel):
     tamanho: int
     categoria: str
     descricao: Optional[str] = None
-    data_upload: str
+    data_upload: datetime
     sha256: str
     aluno: str
     matricula: str
     curso: str
     semestre: str
-    tipo_documento: TipoDocumento
+    tipo_documento: str
 
 
 class DocumentoUpdate(BaseModel):
@@ -38,7 +28,7 @@ class DocumentoUpdate(BaseModel):
     matricula: Optional[str] = None
     curso: Optional[str] = None
     semestre: Optional[str] = None
-    tipo_documento: Optional[TipoDocumento] = None
+    tipo_documento: Optional[str] = None
 
 
 class Estatisticas(BaseModel):
