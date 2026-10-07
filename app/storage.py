@@ -1,5 +1,6 @@
 import os
 import tempfile
+import threading
 import json
 import hashlib
 import mimetypes
@@ -12,49 +13,53 @@ from app.config import DIR_DOCUMENTOS, DIR_METADATA, METADATA_FILE, UPLOAD_MAX_M
 from app.models import Documento
 from app.logger import logger
 
+_lock = threading.RLock()
+
 
 def _ler_documentos() -> list[dict]:
-    if not METADATA_FILE.exists():
-        return []
-    try:
-        with open(METADATA_FILE, "r", encoding="utf-8") as f:
-            conteudo = f.read().strip()
-            if not conteudo:
-                return []
-            return json.loads(conteudo)
-    except json.JSONDecodeError as e:
-        logger.error(f"JSON_INVALIDO erro={e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Arquivo de metadados corrompido ou JSON inválido: {e}",
-        )
-    except OSError as e:
-        logger.error(f"FALHA_DISCO_LEITURA erro={e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Falha de disco ao ler arquivo de metadados: {e}",
-        )
+    with _lock:
+        if not METADATA_FILE.exists():
+            return []
+        try:
+            with open(METADATA_FILE, "r", encoding="utf-8") as f:
+                conteudo = f.read().strip()
+                if not conteudo:
+                    return []
+                return json.loads(conteudo)
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON_INVALIDO erro={e}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Arquivo de metadados corrompido ou JSON inválido: {e}",
+            )
+        except OSError as e:
+            logger.error(f"FALHA_DISCO_LEITURA erro={e}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Falha de disco ao ler arquivo de metadados: {e}",
+            )
 
 
 def _salvar_documentos(docs: list[dict]) -> None:
-    temp_path = None
-    try:
-        DIR_METADATA.mkdir(parents=True, exist_ok=True)
-        with tempfile.NamedTemporaryFile("w", dir=DIR_METADATA, delete=False, encoding="utf-8", suffix=".tmp") as f:
-            temp_path = Path(f.name)
-            json.dump(docs, f, ensure_ascii=False, indent=2, default=str)
-        os.replace(temp_path, METADATA_FILE)
-    except OSError as e:
-        if temp_path and temp_path.exists():
-            try:
-                temp_path.unlink()
-            except OSError:
-                pass
-        logger.error(f"FALHA_DISCO_ESCRITA erro={e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Falha de disco ao salvar arquivo de metadados: {e}",
-        )
+    with _lock:
+        temp_path = None
+        try:
+            DIR_METADATA.mkdir(parents=True, exist_ok=True)
+            with tempfile.NamedTemporaryFile("w", dir=DIR_METADATA, delete=False, encoding="utf-8", suffix=".tmp") as f:
+                temp_path = Path(f.name)
+                json.dump(docs, f, ensure_ascii=False, indent=2, default=str)
+            os.replace(temp_path, METADATA_FILE)
+        except OSError as e:
+            if temp_path and temp_path.exists():
+                try:
+                    temp_path.unlink()
+                except OSError:
+                    pass
+            logger.error(f"FALHA_DISCO_ESCRITA erro={e}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Falha de disco ao salvar arquivo de metadados: {e}",
+            )
 
 
 def _proximo_id(docs: list[dict]) -> int:
@@ -124,53 +129,54 @@ def salvar_arquivo(
             detail=f"Arquivo excede o limite de {UPLOAD_MAX_MB} MB ({tamanho_mb:.2f} MB enviados).",
         )
 
-    try:
-        DIR_DOCUMENTOS.mkdir(parents=True, exist_ok=True)
-        DIR_METADATA.mkdir(parents=True, exist_ok=True)
-    except OSError as e:
-        logger.error(f"FALHA_CRIAR_DIR erro={e}")
-        raise HTTPException(status_code=500, detail=f"Falha ao criar diretórios de armazenamento: {e}")
+    with _lock:
+        try:
+            DIR_DOCUMENTOS.mkdir(parents=True, exist_ok=True)
+            DIR_METADATA.mkdir(parents=True, exist_ok=True)
+        except OSError as e:
+            logger.error(f"FALHA_CRIAR_DIR erro={e}")
+            raise HTTPException(status_code=500, detail=f"Falha ao criar diretórios de armazenamento: {e}")
 
-    docs = _ler_documentos()
-    novo_id = _proximo_id(docs)
+        docs = _ler_documentos()
+        novo_id = _proximo_id(docs)
 
-    nome_limpo = Path(nome_original).name
-    nome_armazenado = _nome_armazenamento(novo_id, nome_limpo)
-    caminho_fisico = DIR_DOCUMENTOS / nome_armazenado
+        nome_limpo = Path(nome_original).name
+        nome_armazenado = _nome_armazenamento(novo_id, nome_limpo)
+        caminho_fisico = DIR_DOCUMENTOS / nome_armazenado
 
-    try:
-        with open(caminho_fisico, "wb") as f:
-            f.write(conteudo)
-    except OSError as e:
-        logger.error(f"FALHA_SALVAR_ARQUIVO_FISICO erro={e}")
-        raise HTTPException(status_code=500, detail=f"Falha de disco ao salvar arquivo físico: {e}")
+        try:
+            with open(caminho_fisico, "wb") as f:
+                f.write(conteudo)
+        except OSError as e:
+            logger.error(f"FALHA_SALVAR_ARQUIVO_FISICO erro={e}")
+            raise HTTPException(status_code=500, detail=f"Falha de disco ao salvar arquivo físico: {e}")
 
-    extensao = Path(nome_limpo).suffix.lower()
-    tipo_mime = mimetypes.guess_type(nome_limpo)[0] or "application/octet-stream"
-    sha256 = calcular_sha256(caminho_fisico)
+        extensao = Path(nome_limpo).suffix.lower()
+        tipo_mime = mimetypes.guess_type(nome_limpo)[0] or "application/octet-stream"
+        sha256 = calcular_sha256(caminho_fisico)
 
-    doc = Documento(
-        id=novo_id,
-        nome_original=nome_limpo,
-        nome_armazenado=nome_armazenado,
-        extensao=extensao,
-        tipo_mime=tipo_mime,
-        tamanho=len(conteudo),
-        categoria=categoria,
-        descricao=descricao,
-        data_upload=datetime.now(),
-        sha256=sha256,
-        aluno=aluno,
-        matricula=matricula,
-        curso=curso,
-        semestre=semestre,
-        tipo_documento=tipo_documento,
-    )
+        doc = Documento(
+            id=novo_id,
+            nome_original=nome_limpo,
+            nome_armazenado=nome_armazenado,
+            extensao=extensao,
+            tipo_mime=tipo_mime,
+            tamanho=len(conteudo),
+            categoria=categoria,
+            descricao=descricao,
+            data_upload=datetime.now(),
+            sha256=sha256,
+            aluno=aluno,
+            matricula=matricula,
+            curso=curso,
+            semestre=semestre,
+            tipo_documento=tipo_documento,
+        )
 
-    docs.append(doc.model_dump(mode="json"))
-    _salvar_documentos(docs)
-    logger.info(f"UPLOAD id={novo_id} arquivo={nome_limpo} aluno={aluno}")
-    return doc
+        docs.append(doc.model_dump(mode="json"))
+        _salvar_documentos(docs)
+        logger.info(f"UPLOAD id={novo_id} arquivo={nome_limpo} aluno={aluno}")
+        return doc
 
 
 def listar_documentos(
@@ -252,34 +258,36 @@ def buscar_por_id(id_: int) -> Documento | None:
 
 
 def atualizar_documento(id_: int, campos: dict) -> Documento | None:
-    docs = _ler_documentos()
-    for i, d in enumerate(docs):
-        if d["id"] == id_:
-            campos_filtrados = {k: v for k, v in campos.items() if k in CAMPOS_ATUALIZAVEIS}
-            for k, v in campos_filtrados.items():
-                docs[i][k] = v
-            _salvar_documentos(docs)
-            logger.info(f"UPDATE id={id_} campos={list(campos_filtrados.keys())}")
-            return Documento(**docs[i])
-    return None
+    with _lock:
+        docs = _ler_documentos()
+        for i, d in enumerate(docs):
+            if d["id"] == id_:
+                campos_filtrados = {k: v for k, v in campos.items() if k in CAMPOS_ATUALIZAVEIS}
+                for k, v in campos_filtrados.items():
+                    docs[i][k] = v
+                _salvar_documentos(docs)
+                logger.info(f"UPDATE id={id_} campos={list(campos_filtrados.keys())}")
+                return Documento(**docs[i])
+        return None
 
 
 def excluir_documento(id_: int) -> bool:
-    docs = _ler_documentos()
-    for i, d in enumerate(docs):
-        if d["id"] == id_:
-            caminho = DIR_DOCUMENTOS / d["nome_armazenado"]
-            if caminho.exists():
-                try:
-                    caminho.unlink()
-                except OSError as e:
-                    logger.error(f"FALHA_REMOVER_ARQUIVO id={id_} erro={e}")
-                    raise HTTPException(status_code=500, detail=f"Falha ao remover arquivo físico: {e}")
-            docs.pop(i)
-            _salvar_documentos(docs)
-            logger.info(f"DELETE id={id_} arquivo={d['nome_armazenado']}")
-            return True
-    return False
+    with _lock:
+        docs = _ler_documentos()
+        for i, d in enumerate(docs):
+            if d["id"] == id_:
+                caminho = DIR_DOCUMENTOS / d["nome_armazenado"]
+                if caminho.exists():
+                    try:
+                        caminho.unlink()
+                    except OSError as e:
+                        logger.error(f"FALHA_REMOVER_ARQUIVO id={id_} erro={e}")
+                        raise HTTPException(status_code=500, detail=f"Falha ao remover arquivo físico: {e}")
+                docs.pop(i)
+                _salvar_documentos(docs)
+                logger.info(f"DELETE id={id_} arquivo={d['nome_armazenado']}")
+                return True
+        return False
 
 
 def caminho_fisico(doc: Documento) -> Path:
