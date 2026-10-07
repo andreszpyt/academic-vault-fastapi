@@ -3,7 +3,7 @@ GET http://127.0.0.1:8000/
 Accept: application/json
 
 ### F1 — Upload de Documento
-POST http://127.0.0.1:8000/documentos/
+POST http://127.0.0.1:8000/documentos
 Content-Type: multipart/form-data; boundary=WebAppBoundary
 
 --WebAppBoundary
@@ -42,19 +42,15 @@ Trabalho sobre persistência em arquivos JSON
 --WebAppBoundary--
 
 ### F2 — Listagem Geral
-GET http://127.0.0.1:8000/documentos/
+GET http://127.0.0.1:8000/documentos
 Accept: application/json
 
-### F7 — Filtragem Combinada (Curso e Tipo)
-GET http://127.0.0.1:8000/documentos/?curso=Engenharia&tipo_documento=trabalho
+### F7 — Pesquisa Avançada (1 Geral + 2 Específicos)
+GET http://127.0.0.1:8000/documentos/pesquisar?extensao=txt&aluno=Lucas&curso=Engenharia
 Accept: application/json
 
-### F7 — Filtragem por Autor/Aluno e Ano
-GET http://127.0.0.1:8000/documentos/?autor=Lucas&ano=2026
-Accept: application/json
-
-### F7 — Pesquisa por Palavra-Chave / Termo
-GET http://127.0.0.1:8000/documentos/?palavra_chave=persistencia
+### F7 — Pesquisa por Categoria, Matrícula e Semestre
+GET http://127.0.0.1:8000/documentos/pesquisar?categoria=academico&matricula=512345&semestre=2026.1
 Accept: application/json
 
 ### F8 — Estatísticas do Cofre
@@ -102,9 +98,6 @@ Accept: application/json
 ### F15 — Listar Backups
 GET http://127.0.0.1:8000/backups
 Accept: application/json
-
-### F15 — Download de Backup
-GET http://127.0.0.1:8000/backups/backup_2026-10-06_1404.zip
 
 ### F6 — Exclusão de Documento
 DELETE http://127.0.0.1:8000/documentos/1
