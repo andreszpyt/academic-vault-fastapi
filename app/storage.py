@@ -9,10 +9,7 @@ from app.models import Documento
 from app.logger import logger
 
 
-# ── Leitura e escrita do JSON ─────────────────────────────────────────────────
-
 def _ler_documentos() -> list[dict]:
-    """Lê o arquivo documentos.json e retorna uma lista de dicionários."""
     if not METADATA_FILE.exists():
         return []
     with open(METADATA_FILE, "r", encoding="utf-8") as f:
@@ -27,22 +24,17 @@ def _ler_documentos() -> list[dict]:
 
 
 def _salvar_documentos(docs: list[dict]) -> None:
-    """Sobrescreve o documentos.json com a lista atualizada."""
     with open(METADATA_FILE, "w", encoding="utf-8") as f:
         json.dump(docs, f, ensure_ascii=False, indent=2)
 
 
 def _proximo_id(docs: list[dict]) -> int:
-    """Retorna o próximo ID disponível."""
     if not docs:
         return 1
     return max(d["id"] for d in docs) + 1
 
 
-# ── Hash SHA-256 ──────────────────────────────────────────────────────────────
-
 def calcular_sha256(path: Path) -> str:
-    """Calcula o hash SHA-256 de um arquivo em disco."""
     h = hashlib.sha256()
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(8192), b""):
@@ -50,16 +42,11 @@ def calcular_sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-# ── Nome seguro para armazenamento ───────────────────────────────────────────
-
 def _nome_armazenamento(id_: int, nome_original: str) -> str:
-    """Prefixa o nome com o ID para evitar sobrescrita de arquivos."""
     sufixo = Path(nome_original).suffix
-    stem   = Path(nome_original).stem
+    stem = Path(nome_original).stem
     return f"{id_}_{stem}{sufixo}"
 
-
-# ── Operações principais ──────────────────────────────────────────────────────
 
 def salvar_arquivo(
     conteudo: bytes,
@@ -72,7 +59,6 @@ def salvar_arquivo(
     semestre: str,
     tipo_documento: str,
 ) -> Documento:
-    # Valida tamanho
     tamanho_mb = len(conteudo) / (1024 * 1024)
     if tamanho_mb > UPLOAD_MAX_MB:
         raise ValueError(
@@ -80,19 +66,18 @@ def salvar_arquivo(
             f"({tamanho_mb:.2f} MB enviados)."
         )
 
-    docs    = _ler_documentos()
+    docs = _ler_documentos()
     novo_id = _proximo_id(docs)
 
     nome_armazenado = _nome_armazenamento(novo_id, nome_original)
-    caminho_fisico  = DIR_DOCUMENTOS / nome_armazenado
+    caminho_fisico = DIR_DOCUMENTOS / nome_armazenado
 
-    # Salva o arquivo físico
     with open(caminho_fisico, "wb") as f:
         f.write(conteudo)
 
-    extensao  = Path(nome_original).suffix.lower()
+    extensao = Path(nome_original).suffix.lower()
     tipo_mime = mimetypes.guess_type(nome_original)[0] or "application/octet-stream"
-    sha256    = calcular_sha256(caminho_fisico)
+    sha256 = calcular_sha256(caminho_fisico)
 
     doc = Documento(
         id=novo_id,
@@ -119,18 +104,22 @@ def salvar_arquivo(
 
 
 def listar_documentos(
-    categoria:      str | None = None,
-    extensao:       str | None = None,
-    aluno:          str | None = None,
-    autor:          str | None = None,
-    matricula:      str | None = None,
-    semestre:       str | None = None,
-    ano:            str | None = None,
+    categoria: str | None = None,
+    extensao: str | None = None,
+    aluno: str | None = None,
+    autor: str | None = None,
+    matricula: str | None = None,
+    semestre: str | None = None,
+    ano: str | None = None,
     ano_publicacao: str | None = None,
     tipo_documento: str | None = None,
-    curso:          str | None = None,
-    palavra_chave:  str | None = None,
-    termo:          str | None = None,
+    curso: str | None = None,
+    palavra_chave: str | None = None,
+    termo: str | None = None,
+    descricao: str | None = None,
+    nome_original: str | None = None,
+    titulo: str | None = None,
+    tipo_mime: str | None = None,
 ) -> list[Documento]:
     docs = _ler_documentos()
     resultado = []
@@ -138,6 +127,7 @@ def listar_documentos(
     busca_aluno = aluno or autor
     busca_ano = ano or ano_publicacao
     busca_termo = palavra_chave or termo
+    busca_nome = nome_original or titulo
 
     for d in docs:
         if categoria and d.get("categoria", "").lower() != categoria.lower():
@@ -161,6 +151,12 @@ def listar_documentos(
         if tipo_documento and str(d.get("tipo_documento", "")).lower() != tipo_documento.lower():
             continue
         if curso and curso.lower() not in d.get("curso", "").lower():
+            continue
+        if descricao and descricao.lower() not in (d.get("descricao") or "").lower():
+            continue
+        if busca_nome and busca_nome.lower() not in d.get("nome_original", "").lower():
+            continue
+        if tipo_mime and d.get("tipo_mime", "").lower() != tipo_mime.lower():
             continue
         if busca_termo:
             termo_lower = busca_termo.lower()
@@ -215,10 +211,7 @@ def caminho_fisico(doc: Documento) -> Path:
     return DIR_DOCUMENTOS / doc.nome_armazenado
 
 
-# ── Estatísticas do cofre ────────────────────────────────────────────────────
-
 def _formatar_tamanho(bytes_: int) -> str:
-    """Formata o tamanho em bytes para representação legível (B, KB, MB, GB)."""
     if bytes_ < 1024:
         return f"{bytes_} B"
     elif bytes_ < 1024 * 1024:
@@ -229,47 +222,48 @@ def _formatar_tamanho(bytes_: int) -> str:
 
 
 def obter_estatisticas() -> dict:
-    """Calcula estatísticas consolidadas sobre os documentos persistidos."""
     docs = _ler_documentos()
 
-    total_documentos       = len(docs)
+    total_documentos = len(docs)
     espaco_utilizado_bytes = sum(d.get("tamanho", 0) for d in docs)
 
-    por_extensao:       dict[str, int] = {}
-    por_categoria:      dict[str, int] = {}
+    por_extensao: dict[str, int] = {}
+    por_categoria: dict[str, int] = {}
     por_tipo_documento: dict[str, int] = {}
-    por_curso:          dict[str, int] = {}
-    por_semestre:       dict[str, int] = {}
+    por_curso: dict[str, int] = {}
+    por_semestre: dict[str, int] = {}
 
     for d in docs:
-        ext   = d.get("extensao", "")
-        cat   = d.get("categoria", "")
-        tipo  = d.get("tipo_documento", "")
+        ext = d.get("extensao", "")
+        cat = d.get("categoria", "")
+        tipo = d.get("tipo_documento", "")
         curso = d.get("curso", "")
-        sem   = d.get("semestre", "")
+        sem = d.get("semestre", "")
 
-        if ext:   por_extensao[ext]        = por_extensao.get(ext, 0) + 1
-        if cat:   por_categoria[cat]       = por_categoria.get(cat, 0) + 1
-        if tipo:  por_tipo_documento[tipo] = por_tipo_documento.get(tipo, 0) + 1
-        if curso: por_curso[curso]        = por_curso.get(curso, 0) + 1
-        if sem:   por_semestre[sem]        = por_semestre.get(sem, 0) + 1
+        if ext:
+            por_extensao[ext] = por_extensao.get(ext, 0) + 1
+        if cat:
+            por_categoria[cat] = por_categoria.get(cat, 0) + 1
+        if tipo:
+            por_tipo_documento[tipo] = por_tipo_documento.get(tipo, 0) + 1
+        if curso:
+            por_curso[curso] = por_curso.get(curso, 0) + 1
+        if sem:
+            por_semestre[sem] = por_semestre.get(sem, 0) + 1
 
     return {
-        "total_documentos":           total_documentos,
-        "espaco_utilizado_bytes":     espaco_utilizado_bytes,
+        "total_documentos": total_documentos,
+        "espaco_utilizado_bytes": espaco_utilizado_bytes,
         "espaco_utilizado_formatado": _formatar_tamanho(espaco_utilizado_bytes),
-        "por_extensao":               por_extensao,
-        "por_categoria":              por_categoria,
-        "por_tipo_documento":         por_tipo_documento,
-        "por_curso":                  por_curso,
-        "por_semestre":               por_semestre,
+        "por_extensao": por_extensao,
+        "por_categoria": por_categoria,
+        "por_tipo_documento": por_tipo_documento,
+        "por_curso": por_curso,
+        "por_semestre": por_semestre,
     }
 
 
-# ── Verificação de Integridade SHA-256 ────────────────────────────────────────
-
 def verificar_integridade_documento(id_: int) -> dict | None:
-    """Verifica a integridade de um documento específico recalculando o SHA-256 do arquivo físico."""
     doc = buscar_por_id(id_)
     if not doc:
         return None
@@ -278,16 +272,16 @@ def verificar_integridade_documento(id_: int) -> dict | None:
     if not caminho.exists():
         logger.error(f"INTEGRIDADE_ARQUIVO_AUSENTE id={id_} arquivo={doc.nome_armazenado}")
         return {
-            "id":            doc.id,
+            "id": doc.id,
             "nome_original": doc.nome_original,
             "hash_original": doc.sha256,
-            "hash_atual":    None,
-            "integro":       False,
-            "status":        "AUSENTE",
+            "hash_atual": None,
+            "integro": False,
+            "status": "AUSENTE",
         }
 
     hash_atual = calcular_sha256(caminho)
-    integro    = (hash_atual == doc.sha256)
+    integro = (hash_atual == doc.sha256)
 
     if integro:
         logger.info(f"INTEGRIDADE_OK id={id_} arquivo={doc.nome_original}")
@@ -298,24 +292,23 @@ def verificar_integridade_documento(id_: int) -> dict | None:
         )
 
     return {
-        "id":            doc.id,
+        "id": doc.id,
         "nome_original": doc.nome_original,
         "hash_original": doc.sha256,
-        "hash_atual":    hash_atual,
-        "integro":       integro,
-        "status":        "INTEGRO" if integro else "ALTERADO",
+        "hash_atual": hash_atual,
+        "integro": integro,
+        "status": "INTEGRO" if integro else "ALTERADO",
     }
 
 
 def verificar_integridade_global() -> dict:
-    """Varre todos os documentos persistidos e valida a integridade física de cada um."""
     docs = _ler_documentos()
 
-    total_verificados        = len(docs)
-    total_integros           = 0
-    total_alterados          = 0
+    total_verificados = len(docs)
+    total_integros = 0
+    total_alterados = 0
     arquivos_nao_localizados = 0
-    detalhes                 = []
+    detalhes = []
 
     for d in docs:
         doc_id = d["id"]
@@ -324,11 +317,11 @@ def verificar_integridade_global() -> dict:
             continue
 
         detalhes.append({
-            "id":            res["id"],
+            "id": res["id"],
             "nome_original": res["nome_original"],
-            "status":        res["status"],
+            "status": res["status"],
             "hash_original": res["hash_original"],
-            "hash_atual":    res["hash_atual"],
+            "hash_atual": res["hash_atual"],
         })
 
         if res["status"] == "INTEGRO":
@@ -344,9 +337,9 @@ def verificar_integridade_global() -> dict:
     )
 
     return {
-        "total_verificados":        total_verificados,
-        "total_integros":           total_integros,
-        "total_alterados":          total_alterados,
+        "total_verificados": total_verificados,
+        "total_integros": total_integros,
+        "total_alterados": total_alterados,
         "arquivos_nao_localizados": arquivos_nao_localizados,
-        "detalhes":                 detalhes,
+        "detalhes": detalhes,
     }
