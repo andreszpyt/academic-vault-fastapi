@@ -84,8 +84,8 @@ Accept: application/json
 ### F13 — Exportação CSV
 GET http://127.0.0.1:8000/exportar/csv
 
-### F13 — Exportação XML
-GET http://127.0.0.1:8000/exportar/xml?semestre=2026.1
+### F16 — Exportação XML
+GET http://127.0.0.1:8000/documentos/exportar/xml?aluno=Lucas&semestre=2026.1
 
 ### F14 — Criar Backup Geral
 POST http://127.0.0.1:8000/backup

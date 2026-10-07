@@ -1,4 +1,6 @@
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Query
+from xml.etree.ElementTree import Element, SubElement, tostring
+from xml.dom import minidom
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Query, Response
 from fastapi.responses import FileResponse
 from typing import Optional
 
@@ -147,6 +149,32 @@ def obter_estatisticas():
     stats = storage.obter_estatisticas()
     logger.info(f"ESTATISTICAS total_documentos={stats['total_documentos']}")
     return stats
+
+
+@router.get("/exportar/xml")
+@router.get("/exportar/xml/", include_in_schema=False)
+def exportar_xml(
+    aluno: Optional[str] = Query(None, description="Filtra por nome do aluno"),
+    semestre: Optional[str] = Query(None, description="Filtra por semestre"),
+):
+    docs = storage.listar_documentos(aluno=aluno, semestre=semestre)
+
+    raiz = Element("documentos")
+    for doc in docs:
+        doc_el = SubElement(raiz, "documento")
+        for campo, valor in doc.model_dump(mode="json").items():
+            el = SubElement(doc_el, campo)
+            el.text = str(valor) if valor is not None else ""
+
+    xml_bruto = tostring(raiz, encoding="utf-8")
+    xml_bonito = minidom.parseString(xml_bruto).toprettyxml(indent="  ", encoding="utf-8")
+
+    logger.info(f"EXPORTACAO_XML aluno={aluno} semestre={semestre} total={len(docs)}")
+    return Response(
+        content=xml_bonito,
+        media_type="application/xml",
+        headers={"Content-Disposition": 'attachment; filename="documentos.xml"'},
+    )
 
 
 @router.get("/{id}/integridade", response_model=IntegridadeIndividual)
