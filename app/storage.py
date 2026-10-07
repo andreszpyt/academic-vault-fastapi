@@ -35,7 +35,7 @@ def _ler_documentos() -> list[dict]:
 
 def _salvar_documentos(docs: list[dict]) -> None:
     with open(METADATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(docs, f, ensure_ascii=False, indent=2)
+        json.dump(docs, f, ensure_ascii=False, indent=2, default=str)
 
 
 def _proximo_id(docs: list[dict]) -> int:
@@ -107,7 +107,7 @@ def salvar_arquivo(
         tipo_documento=tipo_documento,
     )
 
-    docs.append(doc.model_dump())
+    docs.append(doc.model_dump(mode="json"))
     _salvar_documentos(docs)
     logger.info(f"UPLOAD id={novo_id} arquivo={nome_original} aluno={aluno}")
     return doc
