@@ -86,33 +86,29 @@ def listar_documentos(
 def pesquisar_documentos(
     extensao: Optional[str] = Query(None, description="Filtra por extensão"),
     categoria: Optional[str] = Query(None, description="Filtra por categoria"),
-    tipo_documento: Optional[str] = Query(None, description="Filtra por tipo de documento"),
     tipo_mime: Optional[str] = Query(None, description="Filtra por tipo MIME"),
+    descricao: Optional[str] = Query(None, description="Filtra por descrição"),
+    nome_original: Optional[str] = Query(None, description="Filtra por nome original"),
     aluno: Optional[str] = Query(None, description="Filtra por aluno"),
-    autor: Optional[str] = Query(None, description="Alias para autor/aluno"),
     matricula: Optional[str] = Query(None, description="Filtra por matrícula"),
     curso: Optional[str] = Query(None, description="Filtra por curso"),
     semestre: Optional[str] = Query(None, description="Filtra por semestre"),
-    ano: Optional[str] = Query(None, description="Filtra por ano"),
-    ano_publicacao: Optional[str] = Query(None, description="Alias para ano"),
-    descricao: Optional[str] = Query(None, description="Filtra por descrição"),
-    palavra_chave: Optional[str] = Query(None, description="Busca textual em metadados"),
-    termo: Optional[str] = Query(None, description="Busca textual geral"),
-    titulo: Optional[str] = Query(None, description="Filtra por título"),
-    nome_original: Optional[str] = Query(None, description="Filtra por nome original"),
+    tipo_documento: Optional[str] = Query(None, description="Filtra por tipo de documento"),
 ):
     gerais_presentes = []
     if extensao and extensao.strip():
         gerais_presentes.append("extensao")
     if categoria and categoria.strip():
         gerais_presentes.append("categoria")
-    if tipo_documento and tipo_documento.strip():
-        gerais_presentes.append("tipo_documento")
     if tipo_mime and tipo_mime.strip():
         gerais_presentes.append("tipo_mime")
+    if descricao and descricao.strip():
+        gerais_presentes.append("descricao")
+    if nome_original and nome_original.strip():
+        gerais_presentes.append("nome_original")
 
     especificos_presentes = []
-    if (aluno and aluno.strip()) or (autor and autor.strip()):
+    if aluno and aluno.strip():
         especificos_presentes.append("aluno")
     if matricula and matricula.strip():
         especificos_presentes.append("matricula")
@@ -120,37 +116,25 @@ def pesquisar_documentos(
         especificos_presentes.append("curso")
     if semestre and semestre.strip():
         especificos_presentes.append("semestre")
-    if (ano and ano.strip()) or (ano_publicacao and ano_publicacao.strip()):
-        especificos_presentes.append("ano")
-    if descricao and descricao.strip():
-        especificos_presentes.append("descricao")
-    if (palavra_chave and palavra_chave.strip()) or (termo and termo.strip()):
-        especificos_presentes.append("termo")
-    if (titulo and titulo.strip()) or (nome_original and nome_original.strip()):
-        especificos_presentes.append("nome_original")
+    if tipo_documento and tipo_documento.strip():
+        especificos_presentes.append("tipo_documento")
 
     if len(gerais_presentes) < 1 or len(especificos_presentes) < 2:
         raise HTTPException(
             status_code=400,
-            detail="A pesquisa exige pelo menos 1 atributo geral (extensao, categoria, tipo_documento) e pelo menos 2 atributos específicos (aluno, matricula, curso, semestre, ano, etc.).",
+            detail="A pesquisa exige pelo menos 1 atributo geral (extensao, categoria, descricao, tipo_mime, nome_original) e pelo menos 2 atributos específicos (aluno, matricula, curso, semestre, tipo_documento).",
         )
 
     docs = storage.listar_documentos(
         categoria=categoria,
         extensao=extensao,
         aluno=aluno,
-        autor=autor,
         matricula=matricula,
         semestre=semestre,
-        ano=ano,
-        ano_publicacao=ano_publicacao,
         tipo_documento=tipo_documento,
         curso=curso,
-        palavra_chave=palavra_chave,
-        termo=termo,
         descricao=descricao,
         nome_original=nome_original,
-        titulo=titulo,
         tipo_mime=tipo_mime,
     )
     logger.info(f"PESQUISA total={len(docs)} gerais={gerais_presentes} especificos={especificos_presentes}")
