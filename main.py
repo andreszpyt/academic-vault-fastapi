@@ -1,4 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
 from app.routers import documentos, integridade, exportacoes, backup, estatisticas
 from app.logger import logger
 
@@ -15,6 +18,25 @@ app.include_router(backup.router)
 app.include_router(estatisticas.router)
 
 logger.info("INICIALIZACAO sistema iniciado")
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers=exc.headers,
+    )
+
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    logger.error(f"ERRO_INESPERADO rota={request.url.path} erro={exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Erro interno do servidor: {exc}"},
+    )
+
 
 @app.get("/")
 def root():

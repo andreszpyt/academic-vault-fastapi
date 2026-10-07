@@ -4,6 +4,8 @@ import mimetypes
 from pathlib import Path
 from datetime import datetime
 
+from fastapi import HTTPException
+
 from app.config import DIR_DOCUMENTOS, DIR_METADATA, METADATA_FILE, UPLOAD_MAX_MB
 from app.models import Documento
 from app.logger import logger
@@ -12,20 +14,37 @@ from app.logger import logger
 def _ler_documentos() -> list[dict]:
     if not METADATA_FILE.exists():
         return []
-    with open(METADATA_FILE, "r", encoding="utf-8") as f:
-        conteudo = f.read().strip()
-        if not conteudo:
-            return []
-        try:
+    try:
+        with open(METADATA_FILE, "r", encoding="utf-8") as f:
+            conteudo = f.read().strip()
+            if not conteudo:
+                return []
             return json.loads(conteudo)
-        except json.JSONDecodeError as e:
-            logger.error(f"JSON_INVALIDO erro={e}")
-            raise ValueError(f"Arquivo de metadados corrompido: {e}")
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON_INVALIDO erro={e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Arquivo de metadados corrompido ou JSON inválido: {e}",
+        )
+    except OSError as e:
+        logger.error(f"FALHA_DISCO_LEITURA erro={e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Falha de disco ao ler arquivo de metadados: {e}",
+        )
 
 
 def _salvar_documentos(docs: list[dict]) -> None:
-    with open(METADATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(docs, f, ensure_ascii=False, indent=2, default=str)
+    try:
+        DIR_METADATA.mkdir(parents=True, exist_ok=True)
+        with open(METADATA_FILE, "w", encoding="utf-8") as f:
+            json.dump(docs, f, ensure_ascii=False, indent=2, default=str)
+    except OSError as e:
+        logger.error(f"FALHA_DISCO_ESCRITA erro={e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Falha de disco ao salvar arquivo de metadados: {e}",
+        )
 
 
 def _proximo_id(docs: list[dict]) -> int:
@@ -36,10 +55,17 @@ def _proximo_id(docs: list[dict]) -> int:
 
 def calcular_sha256(path: Path) -> str:
     h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(8192), b""):
-            h.update(chunk)
-    return h.hexdigest()
+    try:
+        with open(path, "rb") as f:
+            for chunk in iter(lambda: f.read(8192), b""):
+                h.update(chunk)
+        return h.hexdigest()
+    except OSError as e:
+        logger.error(f"FALHA_CALCULO_SHA256 path={path} erro={e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Falha de disco ao calcular hash do arquivo: {e}",
+        )
 
 
 CAMPOS_ATUALIZAVEIS = {
@@ -78,15 +104,22 @@ def salvar_arquivo(
     semestre: str,
     tipo_documento: str,
 ) -> Documento:
+    if not nome_original or not nome_original.strip():
+        raise HTTPException(status_code=400, detail="Nome do arquivo inválido ou ausente.")
+
     tamanho_mb = len(conteudo) / (1024 * 1024)
     if tamanho_mb > UPLOAD_MAX_MB:
-        raise ValueError(
-            f"Arquivo excede o limite de {UPLOAD_MAX_MB} MB "
-            f"({tamanho_mb:.2f} MB enviados)."
+        raise HTTPException(
+            status_code=400,
+            detail=f"Arquivo excede o limite de {UPLOAD_MAX_MB} MB ({tamanho_mb:.2f} MB enviados).",
         )
 
-    DIR_DOCUMENTOS.mkdir(parents=True, exist_ok=True)
-    DIR_METADATA.mkdir(parents=True, exist_ok=True)
+    try:
+        DIR_DOCUMENTOS.mkdir(parents=True, exist_ok=True)
+        DIR_METADATA.mkdir(parents=True, exist_ok=True)
+    except OSError as e:
+        logger.error(f"FALHA_CRIAR_DIR erro={e}")
+        raise HTTPException(status_code=500, detail=f"Falha ao criar diretórios de armazenamento: {e}")
 
     docs = _ler_documentos()
     novo_id = _proximo_id(docs)
@@ -95,8 +128,12 @@ def salvar_arquivo(
     nome_armazenado = _nome_armazenamento(novo_id, nome_limpo)
     caminho_fisico = DIR_DOCUMENTOS / nome_armazenado
 
-    with open(caminho_fisico, "wb") as f:
-        f.write(conteudo)
+    try:
+        with open(caminho_fisico, "wb") as f:
+            f.write(conteudo)
+    except OSError as e:
+        logger.error(f"FALHA_SALVAR_ARQUIVO_FISICO erro={e}")
+        raise HTTPException(status_code=500, detail=f"Falha de disco ao salvar arquivo físico: {e}")
 
     extensao = Path(nome_limpo).suffix.lower()
     tipo_mime = mimetypes.guess_type(nome_limpo)[0] or "application/octet-stream"
@@ -223,7 +260,11 @@ def excluir_documento(id_: int) -> bool:
         if d["id"] == id_:
             caminho = DIR_DOCUMENTOS / d["nome_armazenado"]
             if caminho.exists():
-                caminho.unlink()
+                try:
+                    caminho.unlink()
+                except OSError as e:
+                    logger.error(f"FALHA_REMOVER_ARQUIVO id={id_} erro={e}")
+                    raise HTTPException(status_code=500, detail=f"Falha ao remover arquivo físico: {e}")
             docs.pop(i)
             _salvar_documentos(docs)
             logger.info(f"DELETE id={id_} arquivo={d['nome_armazenado']}")

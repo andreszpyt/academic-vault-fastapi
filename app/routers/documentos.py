@@ -23,6 +23,8 @@ async def upload_documento(
     tipo_documento: str = Form(...),
     descricao: Optional[str] = Form(None),
 ):
+    if not arquivo.filename or not arquivo.filename.strip():
+        raise HTTPException(status_code=400, detail="Nome do arquivo inválido ou ausente.")
     conteudo = await arquivo.read()
     try:
         doc = storage.salvar_arquivo(
@@ -36,8 +38,11 @@ async def upload_documento(
             semestre=semestre,
             tipo_documento=tipo_documento,
         )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"ERRO_UPLOAD erro={e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao processar upload: {e}")
     return doc
 
 

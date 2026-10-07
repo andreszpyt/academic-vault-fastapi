@@ -2,7 +2,7 @@ import csv
 import io
 from datetime import datetime
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 
 from app import storage
@@ -30,7 +30,13 @@ def exportar_csv():
         writer.writerow(d.model_dump())
 
     nome_arquivo = f"catalogo_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-    (DIR_EXPORTS / nome_arquivo).write_text(output.getvalue(), encoding="utf-8")
+    try:
+        DIR_EXPORTS.mkdir(parents=True, exist_ok=True)
+        (DIR_EXPORTS / nome_arquivo).write_text(output.getvalue(), encoding="utf-8")
+    except OSError as e:
+        logger.error(f"FALHA_DISCO_EXPORT_CSV erro={e}")
+        raise HTTPException(status_code=500, detail=f"Falha de disco ao salvar arquivo de exportação: {e}")
+
     logger.info(f"EXPORTACAO_CSV arquivo={nome_arquivo} total={len(docs)}")
 
     output.seek(0)
