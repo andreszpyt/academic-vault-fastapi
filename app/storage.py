@@ -1,3 +1,5 @@
+import os
+import tempfile
 import json
 import hashlib
 import mimetypes
@@ -35,11 +37,19 @@ def _ler_documentos() -> list[dict]:
 
 
 def _salvar_documentos(docs: list[dict]) -> None:
+    temp_path = None
     try:
         DIR_METADATA.mkdir(parents=True, exist_ok=True)
-        with open(METADATA_FILE, "w", encoding="utf-8") as f:
+        with tempfile.NamedTemporaryFile("w", dir=DIR_METADATA, delete=False, encoding="utf-8", suffix=".tmp") as f:
+            temp_path = Path(f.name)
             json.dump(docs, f, ensure_ascii=False, indent=2, default=str)
+        os.replace(temp_path, METADATA_FILE)
     except OSError as e:
+        if temp_path and temp_path.exists():
+            try:
+                temp_path.unlink()
+            except OSError:
+                pass
         logger.error(f"FALHA_DISCO_ESCRITA erro={e}")
         raise HTTPException(
             status_code=500,
