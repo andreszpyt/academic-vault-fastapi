@@ -249,7 +249,7 @@ def obter_estatisticas() -> dict:
     docs = _ler_documentos()
 
     total_documentos = len(docs)
-    espaco_utilizado_bytes = sum(d.get("tamanho", 0) for d in docs)
+    espaco_utilizado_bytes = 0
 
     por_extensao: dict[str, int] = {}
     por_categoria: dict[str, int] = {}
@@ -258,6 +258,19 @@ def obter_estatisticas() -> dict:
     por_semestre: dict[str, int] = {}
 
     for d in docs:
+        tam = d.get("tamanho")
+        if tam is None or tam <= 0:
+            nome_arm = d.get("nome_armazenado")
+            if nome_arm:
+                caminho = DIR_DOCUMENTOS / nome_arm
+                if caminho.exists():
+                    tam = caminho.stat().st_size
+                else:
+                    tam = 0
+            else:
+                tam = 0
+        espaco_utilizado_bytes += tam
+
         ext = d.get("extensao", "")
         cat = d.get("categoria", "")
         tipo = d.get("tipo_documento", "")
