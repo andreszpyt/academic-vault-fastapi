@@ -8,6 +8,16 @@ from app.config import DIR_DOCUMENTOS, METADATA_FILE, UPLOAD_MAX_MB
 from app.models import Documento
 from app.logger import logger
 
+"""
+==============================================================================
+VALIDAÇÃO CRUD (Issue #4 - F1 a F6)
+Este módulo atua como a camada de persistência (Storage) do sistema.
+Todas as operações de Criar, Ler, Atualizar e Apagar (CRUD) operam 
+estritamente sobre o ficheiro local (documentos.json),
+sem depender de um Banco de Dados externo, conforme a exigência da tarefa.
+==============================================================================
+"""
+
 
 # ── Leitura e escrita do JSON ─────────────────────────────────────────────────
 
