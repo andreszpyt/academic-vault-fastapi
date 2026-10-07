@@ -15,13 +15,13 @@ from app.logger import logger
 router = APIRouter(tags=["Exportações"])
 
 
-# F13 — Exportação CSV
 @router.get("/exportar/csv")
+@router.get("/exportar/csv/", include_in_schema=False)
 def exportar_csv():
     docs = storage.listar_documentos()
 
     campos = [
-        "id", "nome_original", "extensao", "tipo_mime", "tamanho",
+        "id", "nome_original", "nome_armazenado", "extensao", "tipo_mime", "tamanho",
         "categoria", "descricao", "data_upload", "sha256",
         "aluno", "matricula", "curso", "semestre", "tipo_documento",
     ]
@@ -44,10 +44,10 @@ def exportar_csv():
     )
 
 
-# Requisito do Tema 2 — Exportação XML por aluno ou semestre
 @router.get("/exportar/xml")
+@router.get("/exportar/xml/", include_in_schema=False)
 def exportar_xml(
-    aluno:    Optional[str] = Query(None, description="Filtrar por nome do aluno"),
+    aluno: Optional[str] = Query(None, description="Filtrar por nome do aluno"),
     semestre: Optional[str] = Query(None, description="Filtrar por semestre (ex: 2026.1)"),
 ):
     if not aluno and not semestre:
@@ -64,7 +64,6 @@ def exportar_xml(
             detail="Nenhum documento encontrado com os filtros informados.",
         )
 
-    # Monta a árvore XML
     raiz = Element("cofre_academico")
     raiz.set("exportado_em", datetime.now().isoformat(timespec="seconds"))
     if aluno:
@@ -78,13 +77,11 @@ def exportar_xml(
             el = SubElement(doc_el, campo)
             el.text = str(valor) if valor is not None else ""
 
-    # Formata o XML com indentação
-    xml_bruto  = tostring(raiz, encoding="unicode")
+    xml_bruto = tostring(raiz, encoding="unicode")
     xml_bonito = minidom.parseString(xml_bruto).toprettyxml(indent="  ")
 
-    # Remove a linha <?xml ...?> duplicada que o minidom adiciona
-    linhas     = xml_bonito.split("\n")
-    xml_final  = "\n".join(linhas[1:]) if linhas[0].startswith("<?xml") else xml_bonito
+    linhas = xml_bonito.split("\n")
+    xml_final = "\n".join(linhas[1:]) if linhas[0].startswith("<?xml") else xml_bonito
 
     nome_arquivo = f"export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xml"
     (DIR_EXPORTS / nome_arquivo).write_text(xml_final, encoding="utf-8")

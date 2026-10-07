@@ -14,8 +14,8 @@ from app.logger import logger
 router = APIRouter(tags=["Backup"])
 
 
-# F14 — Criar backup compactado (geral ou seletivo)
 @router.post("/backup", status_code=201)
+@router.post("/backup/", status_code=201, include_in_schema=False)
 def criar_backup(
     categoria: Optional[str] = Query(None, description="Filtrar por categoria"),
     curso: Optional[str] = Query(None, description="Filtrar por curso"),
@@ -41,7 +41,7 @@ def criar_backup(
             detail="Nenhum documento encontrado com os filtros informados.",
         )
 
-    nome_base = f"backup_{datetime.now().strftime('%Y-%m-%d_%H%M')}"
+    nome_base = f"backup_{datetime.now().strftime('%Y-%m-%d_%H%M%S')}"
     nome_zip = f"{nome_base}.zip"
     caminho_zip = DIR_BACKUPS / nome_zip
 
@@ -57,8 +57,10 @@ def criar_backup(
                 caminho_doc = storage.caminho_fisico(d)
                 if caminho_doc.exists():
                     zf.write(caminho_doc, arcname=f"documentos/{d.nome_armazenado}")
+                    zf.write(caminho_doc, arcname=d.nome_armazenado)
 
             metadados_json = json.dumps([d.model_dump() for d in docs], ensure_ascii=False, indent=2)
+            zf.writestr("documentos.json", metadados_json)
             zf.writestr("metadata/documentos.json", metadados_json)
 
             if CONFIG_PATH.exists():
@@ -76,6 +78,7 @@ def criar_backup(
 
     return {
         "mensagem": "Backup criado com sucesso.",
+        "nome": nome_zip,
         "arquivo": nome_zip,
         "tamanho": tamanho,
         "total_documentos": len(docs),
@@ -83,12 +86,13 @@ def criar_backup(
     }
 
 
-# F15 — Listar backups disponíveis
 @router.get("/backups", response_model=list[ItemBackup])
+@router.get("/backups/", response_model=list[ItemBackup], include_in_schema=False)
 def listar_backups():
     backups = []
     for f in sorted(DIR_BACKUPS.glob("*.zip"), key=lambda x: x.stat().st_mtime, reverse=True):
         backups.append({
+            "nome": f.name,
             "arquivo": f.name,
             "tamanho": f.stat().st_size,
             "criado_em": datetime.fromtimestamp(f.stat().st_mtime).isoformat(timespec="seconds"),
@@ -98,8 +102,8 @@ def listar_backups():
     return backups
 
 
-# Download de um backup específico
 @router.get("/backups/{nome}")
+@router.get("/backups/{nome}/", include_in_schema=False)
 def download_backup(nome: str):
     caminho = DIR_BACKUPS / nome
 
