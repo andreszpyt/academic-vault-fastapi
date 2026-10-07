@@ -45,6 +45,7 @@ logs/
 # Armazenamento e Uploads Locais (Storage)
 # Ignora arquivos gerados/salvos, mantendo estrutura se houver .gitkeep
 # =========================================
+/storage
 storage/logs/*
 !storage/logs/.gitkeep
 
