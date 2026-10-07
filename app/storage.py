@@ -4,19 +4,9 @@ import mimetypes
 from pathlib import Path
 from datetime import datetime
 
-from app.config import DIR_DOCUMENTOS, METADATA_FILE, UPLOAD_MAX_MB
+from app.config import DIR_DOCUMENTOS, DIR_METADATA, METADATA_FILE, UPLOAD_MAX_MB
 from app.models import Documento
 from app.logger import logger
-
-"""
-==============================================================================
-VALIDAÇÃO CRUD (Issue #4 - F1 a F6)
-Este módulo atua como a camada de persistência (Storage) do sistema.
-Todas as operações de Criar, Ler, Atualizar e Apagar (CRUD) operam 
-estritamente sobre o ficheiro local (documentos.json),
-sem depender de um Banco de Dados externo, conforme a exigência da tarefa.
-==============================================================================
-"""
 
 
 def _ler_documentos() -> list[dict]:
@@ -52,10 +42,29 @@ def calcular_sha256(path: Path) -> str:
     return h.hexdigest()
 
 
+CAMPOS_ATUALIZAVEIS = {
+    "categoria",
+    "descricao",
+    "aluno",
+    "matricula",
+    "curso",
+    "semestre",
+    "tipo_documento",
+}
+
+
 def _nome_armazenamento(id_: int, nome_original: str) -> str:
-    sufixo = Path(nome_original).suffix
-    stem = Path(nome_original).stem
-    return f"{id_}_{stem}{sufixo}"
+    path_obj = Path(Path(nome_original).name)
+    sufixo = path_obj.suffix
+    stem = path_obj.stem
+    nome = f"{id_}_{stem}{sufixo}"
+    caminho = DIR_DOCUMENTOS / nome
+    contador = 1
+    while caminho.exists():
+        nome = f"{id_}_{stem}_{contador}{sufixo}"
+        caminho = DIR_DOCUMENTOS / nome
+        contador += 1
+    return nome
 
 
 def salvar_arquivo(
@@ -76,29 +85,33 @@ def salvar_arquivo(
             f"({tamanho_mb:.2f} MB enviados)."
         )
 
+    DIR_DOCUMENTOS.mkdir(parents=True, exist_ok=True)
+    DIR_METADATA.mkdir(parents=True, exist_ok=True)
+
     docs = _ler_documentos()
     novo_id = _proximo_id(docs)
 
-    nome_armazenado = _nome_armazenamento(novo_id, nome_original)
+    nome_limpo = Path(nome_original).name
+    nome_armazenado = _nome_armazenamento(novo_id, nome_limpo)
     caminho_fisico = DIR_DOCUMENTOS / nome_armazenado
 
     with open(caminho_fisico, "wb") as f:
         f.write(conteudo)
 
-    extensao = Path(nome_original).suffix.lower()
-    tipo_mime = mimetypes.guess_type(nome_original)[0] or "application/octet-stream"
+    extensao = Path(nome_limpo).suffix.lower()
+    tipo_mime = mimetypes.guess_type(nome_limpo)[0] or "application/octet-stream"
     sha256 = calcular_sha256(caminho_fisico)
 
     doc = Documento(
         id=novo_id,
-        nome_original=nome_original,
+        nome_original=nome_limpo,
         nome_armazenado=nome_armazenado,
         extensao=extensao,
         tipo_mime=tipo_mime,
         tamanho=len(conteudo),
         categoria=categoria,
         descricao=descricao,
-        data_upload=datetime.now().isoformat(timespec="seconds"),
+        data_upload=datetime.now(),
         sha256=sha256,
         aluno=aluno,
         matricula=matricula,
@@ -109,7 +122,7 @@ def salvar_arquivo(
 
     docs.append(doc.model_dump(mode="json"))
     _salvar_documentos(docs)
-    logger.info(f"UPLOAD id={novo_id} arquivo={nome_original} aluno={aluno}")
+    logger.info(f"UPLOAD id={novo_id} arquivo={nome_limpo} aluno={aluno}")
     return doc
 
 
@@ -195,10 +208,11 @@ def atualizar_documento(id_: int, campos: dict) -> Documento | None:
     docs = _ler_documentos()
     for i, d in enumerate(docs):
         if d["id"] == id_:
-            for k, v in campos.items():
+            campos_filtrados = {k: v for k, v in campos.items() if k in CAMPOS_ATUALIZAVEIS}
+            for k, v in campos_filtrados.items():
                 docs[i][k] = v
             _salvar_documentos(docs)
-            logger.info(f"UPDATE id={id_} campos={list(campos.keys())}")
+            logger.info(f"UPDATE id={id_} campos={list(campos_filtrados.keys())}")
             return Documento(**docs[i])
     return None
 
