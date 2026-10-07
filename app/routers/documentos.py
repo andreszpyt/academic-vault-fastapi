@@ -9,17 +9,17 @@ from app.logger import logger
 router = APIRouter(prefix="/documentos", tags=["Documentos"])
 
 
-# F1 — Upload
-@router.post("/", response_model=Documento, status_code=201)
+@router.post("", response_model=Documento, status_code=201)
+@router.post("/", response_model=Documento, status_code=201, include_in_schema=False)
 async def upload_documento(
-    arquivo:        UploadFile = File(...),
-    categoria:      str        = Form(...),
-    aluno:          str        = Form(...),
-    matricula:      str        = Form(...),
-    curso:          str        = Form(...),
-    semestre:       str        = Form(...),
-    tipo_documento: str        = Form(...),
-    descricao:      Optional[str] = Form(None),
+    arquivo: UploadFile = File(...),
+    categoria: str = Form(...),
+    aluno: str = Form(...),
+    matricula: str = Form(...),
+    curso: str = Form(...),
+    semestre: str = Form(...),
+    tipo_documento: str = Form(...),
+    descricao: Optional[str] = Form(None),
 ):
     conteudo = await arquivo.read()
     try:
@@ -39,21 +39,25 @@ async def upload_documento(
     return doc
 
 
-# F2 e F7 — Listagem e Filtragem
-@router.get("/", response_model=list[Documento])
+@router.get("", response_model=list[Documento])
+@router.get("/", response_model=list[Documento], include_in_schema=False)
 def listar_documentos(
-    categoria:      Optional[str] = Query(None, description="Filtra por categoria"),
-    extensao:       Optional[str] = Query(None, description="Filtra por extensão (ex: .pdf, .txt)"),
-    aluno:          Optional[str] = Query(None, description="Busca parcial por nome do aluno"),
-    autor:          Optional[str] = Query(None, description="Alias para busca por autor/aluno"),
-    matricula:      Optional[str] = Query(None, description="Filtra por matrícula"),
-    semestre:       Optional[str] = Query(None, description="Filtra por semestre (ex: 2026.1)"),
-    ano:            Optional[str] = Query(None, description="Filtra por ano (ex: 2026)"),
+    categoria: Optional[str] = Query(None, description="Filtra por categoria"),
+    extensao: Optional[str] = Query(None, description="Filtra por extensão (ex: .pdf, .txt)"),
+    aluno: Optional[str] = Query(None, description="Busca parcial por nome do aluno"),
+    autor: Optional[str] = Query(None, description="Alias para busca por autor/aluno"),
+    matricula: Optional[str] = Query(None, description="Filtra por matrícula"),
+    semestre: Optional[str] = Query(None, description="Filtra por semestre (ex: 2026.1)"),
+    ano: Optional[str] = Query(None, description="Filtra por ano (ex: 2026)"),
     ano_publicacao: Optional[str] = Query(None, description="Alias para busca por ano"),
     tipo_documento: Optional[str] = Query(None, description="Filtra por tipo de documento"),
-    curso:          Optional[str] = Query(None, description="Busca parcial por curso"),
-    palavra_chave:  Optional[str] = Query(None, description="Busca textual em nome, descrição e tags"),
-    termo:          Optional[str] = Query(None, description="Busca textual geral"),
+    curso: Optional[str] = Query(None, description="Busca parcial por curso"),
+    palavra_chave: Optional[str] = Query(None, description="Busca textual em nome, descrição e tags"),
+    termo: Optional[str] = Query(None, description="Busca textual geral"),
+    descricao: Optional[str] = Query(None, description="Busca por descrição"),
+    nome_original: Optional[str] = Query(None, description="Busca por nome original"),
+    titulo: Optional[str] = Query(None, description="Alias para nome original"),
+    tipo_mime: Optional[str] = Query(None, description="Filtra por tipo MIME"),
 ):
     docs = storage.listar_documentos(
         categoria=categoria,
@@ -68,21 +72,101 @@ def listar_documentos(
         curso=curso,
         palavra_chave=palavra_chave,
         termo=termo,
+        descricao=descricao,
+        nome_original=nome_original,
+        titulo=titulo,
+        tipo_mime=tipo_mime,
     )
     logger.info(f"LISTAGEM total={len(docs)}")
     return docs
 
 
-# F8 — Estatísticas do Cofre
+@router.get("/pesquisar", response_model=list[Documento])
+@router.get("/pesquisar/", response_model=list[Documento], include_in_schema=False)
+def pesquisar_documentos(
+    extensao: Optional[str] = Query(None, description="Filtra por extensão"),
+    categoria: Optional[str] = Query(None, description="Filtra por categoria"),
+    tipo_documento: Optional[str] = Query(None, description="Filtra por tipo de documento"),
+    tipo_mime: Optional[str] = Query(None, description="Filtra por tipo MIME"),
+    aluno: Optional[str] = Query(None, description="Filtra por aluno"),
+    autor: Optional[str] = Query(None, description="Alias para autor/aluno"),
+    matricula: Optional[str] = Query(None, description="Filtra por matrícula"),
+    curso: Optional[str] = Query(None, description="Filtra por curso"),
+    semestre: Optional[str] = Query(None, description="Filtra por semestre"),
+    ano: Optional[str] = Query(None, description="Filtra por ano"),
+    ano_publicacao: Optional[str] = Query(None, description="Alias para ano"),
+    descricao: Optional[str] = Query(None, description="Filtra por descrição"),
+    palavra_chave: Optional[str] = Query(None, description="Busca textual em metadados"),
+    termo: Optional[str] = Query(None, description="Busca textual geral"),
+    titulo: Optional[str] = Query(None, description="Filtra por título"),
+    nome_original: Optional[str] = Query(None, description="Filtra por nome original"),
+):
+    gerais_presentes = []
+    if extensao and extensao.strip():
+        gerais_presentes.append("extensao")
+    if categoria and categoria.strip():
+        gerais_presentes.append("categoria")
+    if tipo_documento and tipo_documento.strip():
+        gerais_presentes.append("tipo_documento")
+    if tipo_mime and tipo_mime.strip():
+        gerais_presentes.append("tipo_mime")
+
+    especificos_presentes = []
+    if (aluno and aluno.strip()) or (autor and autor.strip()):
+        especificos_presentes.append("aluno")
+    if matricula and matricula.strip():
+        especificos_presentes.append("matricula")
+    if curso and curso.strip():
+        especificos_presentes.append("curso")
+    if semestre and semestre.strip():
+        especificos_presentes.append("semestre")
+    if (ano and ano.strip()) or (ano_publicacao and ano_publicacao.strip()):
+        especificos_presentes.append("ano")
+    if descricao and descricao.strip():
+        especificos_presentes.append("descricao")
+    if (palavra_chave and palavra_chave.strip()) or (termo and termo.strip()):
+        especificos_presentes.append("termo")
+    if (titulo and titulo.strip()) or (nome_original and nome_original.strip()):
+        especificos_presentes.append("nome_original")
+
+    if len(gerais_presentes) < 1 or len(especificos_presentes) < 2:
+        raise HTTPException(
+            status_code=400,
+            detail="A pesquisa exige pelo menos 1 atributo geral (extensao, categoria, tipo_documento) e pelo menos 2 atributos específicos (aluno, matricula, curso, semestre, ano, etc.).",
+        )
+
+    docs = storage.listar_documentos(
+        categoria=categoria,
+        extensao=extensao,
+        aluno=aluno,
+        autor=autor,
+        matricula=matricula,
+        semestre=semestre,
+        ano=ano,
+        ano_publicacao=ano_publicacao,
+        tipo_documento=tipo_documento,
+        curso=curso,
+        palavra_chave=palavra_chave,
+        termo=termo,
+        descricao=descricao,
+        nome_original=nome_original,
+        titulo=titulo,
+        tipo_mime=tipo_mime,
+    )
+    logger.info(f"PESQUISA total={len(docs)} gerais={gerais_presentes} especificos={especificos_presentes}")
+    return docs
+
+
 @router.get("/estatisticas", response_model=Estatisticas)
+@router.get("/estatisticas/", response_model=Estatisticas, include_in_schema=False)
 def obter_estatisticas():
     stats = storage.obter_estatisticas()
     logger.info(f"ESTATISTICAS total_documentos={stats['total_documentos']}")
     return stats
 
 
-# F9 — Verificação de Integridade Individual
 @router.get("/{id}/integridade", response_model=IntegridadeIndividual)
+@router.get("/{id}/integridade/", response_model=IntegridadeIndividual, include_in_schema=False)
 def verificar_integridade(id: int):
     resultado = storage.verificar_integridade_documento(id)
     if not resultado:
@@ -91,8 +175,8 @@ def verificar_integridade(id: int):
     return resultado
 
 
-# F3 — Consulta por ID
 @router.get("/{id}", response_model=Documento)
+@router.get("/{id}/", response_model=Documento, include_in_schema=False)
 def consultar_documento(id: int):
     doc = storage.buscar_por_id(id)
     if not doc:
@@ -102,8 +186,8 @@ def consultar_documento(id: int):
     return doc
 
 
-# F4 — Download
 @router.get("/{id}/download")
+@router.get("/{id}/download/", include_in_schema=False)
 def download_documento(id: int):
     doc = storage.buscar_por_id(id)
     if not doc:
@@ -123,8 +207,8 @@ def download_documento(id: int):
     )
 
 
-# F5 — Atualização de metadados
 @router.put("/{id}", response_model=Documento)
+@router.put("/{id}/", response_model=Documento, include_in_schema=False)
 def atualizar_documento(id: int, body: DocumentoUpdate):
     doc = storage.atualizar_documento(id, body.model_dump(exclude_none=True))
     if not doc:
@@ -133,8 +217,8 @@ def atualizar_documento(id: int, body: DocumentoUpdate):
     return doc
 
 
-# F6 — Exclusão
 @router.delete("/{id}", status_code=200)
+@router.delete("/{id}/", status_code=200, include_in_schema=False)
 def excluir_documento(id: int):
     ok = storage.excluir_documento(id)
     if not ok:
