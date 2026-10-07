@@ -3,7 +3,6 @@ import io
 import json
 import mimetypes
 import zipfile
-from datetime import datetime
 from pathlib import Path
 
 BASE_DIR = Path(__file__).parent
@@ -93,6 +92,24 @@ def gerar_docx(titulo: str, autor: str, conteudo_texto: str) -> bytes:
     return buf.getvalue()
 
 
+def gerar_jpg() -> bytes:
+    return bytes([
+        0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01,
+        0x01, 0x01, 0x00, 0x48, 0x00, 0x48, 0x00, 0x00, 0xFF, 0xDB, 0x00, 0x43,
+        0x00, 0x08, 0x06, 0x06, 0x07, 0x06, 0x05, 0x08, 0x07, 0x07, 0x07, 0x09,
+        0x09, 0x08, 0x0A, 0x0C, 0x14, 0x0D, 0x0C, 0x0B, 0x0B, 0x0C, 0x19, 0x12,
+        0x13, 0x0F, 0x14, 0x1D, 0x1A, 0x1F, 0x1E, 0x1D, 0x1A, 0x1C, 0x1C, 0x20,
+        0x24, 0x2E, 0x27, 0x20, 0x22, 0x2C, 0x23, 0x1C, 0x1C, 0x28, 0x37, 0x29,
+        0x2C, 0x30, 0x31, 0x34, 0x34, 0x34, 0x1F, 0x27, 0x39, 0x3D, 0x38, 0x32,
+        0x3C, 0x2E, 0x33, 0x34, 0x32, 0xFF, 0xC0, 0x00, 0x0B, 0x08, 0x00, 0x01,
+        0x00, 0x01, 0x01, 0x01, 0x11, 0x00, 0xFF, 0xC4, 0x00, 0x1F, 0x00, 0x00,
+        0x01, 0x05, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+        0x09, 0x0A, 0x0B, 0xFF, 0xDA, 0x00, 0x08, 0x01, 0x01, 0x00, 0x00, 0x3F,
+        0x00, 0x7F, 0x00, 0xFF, 0xD9
+    ])
+
+
 DOCUMENTOS_SEED = [
     {
         "id": 1,
@@ -178,39 +195,16 @@ DOCUMENTOS_SEED = [
     },
     {
         "id": 7,
-        "nome_original": "template_artigo_sbc.tex",
-        "categoria": "pesquisa",
-        "descricao": "Modelo LaTeX para submissão de artigos no Simpósio Brasileiro de Computação",
+        "nome_original": "carteira_estudantil_frente.jpg",
+        "categoria": "administrativo",
+        "descricao": "Digitalização da carteira de identificação estudantil universitária",
         "data_upload": "2026-09-26T15:40:12",
         "aluno": "André Pinheiro de Sousa",
         "matricula": "538912",
         "curso": "Engenharia de Software",
         "semestre": "2026.1",
-        "tipo_documento": "outro",
-        "gerador": lambda: r"""\documentclass[12pt]{article}
-\usepackage{sbc-template}
-\usepackage{graphicx,url}
-\usepackage[brazil]{babel}
-\usepackage[utf8]{inputenc}
-
-\title{Modelo de Artigo para Simpósios da SBC}
-\author{André Pinheiro de Sousa\inst{1}}
-\address{Universidade Federal do Ceará -- Campus Quixadá
-  \email{andre.pinheiro@alu.ufc.br}
-}
-
-\begin{document}
-\maketitle
-
-\begin{abstract}
-Este documento apresenta o modelo oficial em LaTeX para submissao de artigos no formato SBC.
-\end{abstract}
-
-\section{Introdução}
-O armazenamento seguro de metadados garante a rastreabilidade e a integridade de publicações acadêmicas.
-
-\end{document}
-""".encode("utf-8"),
+        "tipo_documento": "comprovante",
+        "gerador": gerar_jpg,
     },
     {
         "id": 8,
@@ -246,33 +240,20 @@ Curso: Design Digital - UFC Quixadá
     },
     {
         "id": 9,
-        "nome_original": "benchmark_sha256_dataset.csv",
-        "categoria": "pesquisa",
-        "descricao": "Resultados tabulados de benchmarks de throughput de hashing em disco vs RAM",
+        "nome_original": "comprovante_vacinacao_campanha.jpg",
+        "categoria": "administrativo",
+        "descricao": "Registro fotográfico do cartão de vacinação para cadastro institucional",
         "data_upload": "2026-09-27T13:55:18",
         "aluno": "Diego Fernandes Rocha",
         "matricula": "513820",
         "curso": "Ciência da Computação",
         "semestre": "2026.1",
-        "tipo_documento": "trabalho",
-        "gerador": lambda: """algoritmo,tamanho_arquivo_mb,tempo_execucao_ms,throughput_mb_s,modo_leitura
-SHA-256,1,1.24,806.45,streaming_64kb
-SHA-256,10,11.85,843.88,streaming_64kb
-SHA-256,50,58.40,856.16,streaming_64kb
-SHA-256,100,117.92,848.03,streaming_64kb
-MD5,1,0.62,1612.90,streaming_64kb
-MD5,10,5.90,1694.91,streaming_64kb
-MD5,50,29.10,1718.21,streaming_64kb
-MD5,100,58.80,1700.68,streaming_64kb
-SHA-512,1,0.95,1052.63,streaming_64kb
-SHA-512,10,8.80,1136.36,streaming_64kb
-SHA-512,50,44.20,1131.22,streaming_64kb
-SHA-512,100,89.10,1122.33,streaming_64kb
-""".encode("utf-8"),
+        "tipo_documento": "comprovante",
+        "gerador": gerar_jpg,
     },
     {
         "id": 10,
-        "nome_original": "manual_normas_abnt_nbr6023.md",
+        "nome_original": "manual_normas_abnt_nbr6023.txt",
         "categoria": "academico",
         "descricao": "Guia de referência rápida para elaboração de referências e citações acadêmicas",
         "data_upload": "2026-09-28T09:12:44",
@@ -281,23 +262,16 @@ SHA-512,100,89.10,1122.33,streaming_64kb
         "curso": "Sistemas de Informação",
         "semestre": "2025.1",
         "tipo_documento": "outro",
-        "gerador": lambda: """# Manual Prático de Normas ABNT NBR 6023:2018
+        "gerador": lambda: """Manual Prático de Normas ABNT NBR 6023:2018
 
-**Autora:** Larissa Carvalho Moreira
-**Curso:** Sistemas de Informação - UFC Quixadá
+Autora: Larissa Carvalho Moreira
+Curso: Sistemas de Informação - UFC Quixadá
 
----
+1. Estrutura de Citação de Artigo em Periódico:
+SOBRENOME, Nome do Autor. Título do artigo. Nome da Revista, Local, v. volume, n. número, p. páginas, ano.
 
-## 1. Estrutura de Citação de Artigo em Periódico
-`SOBRENOME, Nome do Autor. Título do artigo. Nome da Revista, Local, v. volume, n. número, p. páginas, ano.`
-
-### Exemplo:
-SILVA, Francisco Victor; PINHEIRO, André. Padrões de Persistência em Cofres Digitais. *Revista Brasileira de Computação Aplicada*, Quixadá, v. 8, n. 2, p. 45-60, 2026.
-
----
-
-## 2. Estrutura de Citação de Monografia e TCC
-`SOBRENOME, Nome. Título do trabalho: subtítulo. Ano. Número de folhas f. Trabalho de Conclusão de Curso (Graduação em Nome do Curso) – Universidade Federal do Ceará, Quixadá, ano.`
+2. Estrutura de Citação de Monografia e TCC:
+SOBRENOME, Nome. Título do trabalho: subtítulo. Ano. Número de folhas f. Trabalho de Conclusão de Curso - Universidade Federal do Ceará, Quixadá, ano.
 """.encode("utf-8"),
     },
     {
@@ -345,38 +319,16 @@ SILVA, Francisco Victor; PINHEIRO, André. Padrões de Persistência em Cofres D
     },
     {
         "id": 14,
-        "nome_original": "especificacao_protocolo_sensores.tex",
-        "categoria": "pesquisa",
-        "descricao": "Especificação formal de protocolo em redes de sensores sem fio (RSSF)",
+        "nome_original": "foto_documento_rg.jpg",
+        "categoria": "administrativo",
+        "descricao": "Cópia digitalizada do documento de identidade civil para arquivo acadêmico",
         "data_upload": "2026-09-30T11:05:15",
         "aluno": "Mateus Holanda Bezerra",
         "matricula": "514930",
         "curso": "Engenharia de Computação",
         "semestre": "2025.1",
-        "tipo_documento": "trabalho",
-        "gerador": lambda: r"""\documentclass[conference]{IEEEtran}
-\IEEEoverridecommandlockouts
-\usepackage{cite}
-\usepackage{amsmath,amssymb,amsfonts}
-
-\title{Especificação de Protocolo de Roteamento para Sensores IoT de Baixo Consumo}
-\author{\IEEEauthorblockN{Mateus Holanda Bezerra}
-\IEEEauthorblockA{\textit{Engenharia de Computação} \\
-\textit{Universidade Federal do Ceará}\\
-Quixadá, Brasil}}
-
-\begin{document}
-\maketitle
-
-\begin{abstract}
-Este trabalho formaliza um protocolo leve de comunicação ponto-a-ponto com tolerância a falhas.
-\end{abstract}
-
-\section{Arquitetura Proposta}
-A camada de rede opera em topologia em malha híbrida (mesh).
-
-\end{document}
-""".encode("utf-8"),
+        "tipo_documento": "comprovante",
+        "gerador": gerar_jpg,
     },
     {
         "id": 15,
@@ -411,7 +363,6 @@ def popular():
     DIR_DOCUMENTOS.mkdir(parents=True, exist_ok=True)
     DIR_METADATA.mkdir(parents=True, exist_ok=True)
 
-    # Limpa arquivos antigos para garantir consistência total
     for item in DIR_DOCUMENTOS.iterdir():
         if item.is_file():
             item.unlink()
