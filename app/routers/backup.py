@@ -33,7 +33,7 @@ def criar_backup(
     )
 
     if ano:
-        docs = [d for d in docs if ano in (d.semestre or "") or (d.data_upload or "").startswith(ano)]
+        docs = [d for d in docs if ano in (d.semestre or "") or str(d.data_upload).startswith(ano)]
 
     if not docs and any([categoria, curso, semestre, ano, tipo_documento, aluno]):
         raise HTTPException(
@@ -59,7 +59,7 @@ def criar_backup(
                     zf.write(caminho_doc, arcname=f"documentos/{d.nome_armazenado}")
                     zf.write(caminho_doc, arcname=d.nome_armazenado)
 
-            metadados_json = json.dumps([d.model_dump() for d in docs], ensure_ascii=False, indent=2)
+            metadados_json = json.dumps([d.model_dump(mode="json") for d in docs], ensure_ascii=False, indent=2)
             zf.writestr("documentos.json", metadados_json)
             zf.writestr("metadata/documentos.json", metadados_json)
 
