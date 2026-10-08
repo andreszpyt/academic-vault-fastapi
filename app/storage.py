@@ -9,7 +9,7 @@ from datetime import datetime
 
 from fastapi import HTTPException
 
-from app.config import DIR_DOCUMENTOS, DIR_METADATA, METADATA_FILE, UPLOAD_MAX_MB
+from app.config import DIR_DOCUMENTOS, DIR_METADATA, METADATA_FILE, UPLOAD_MAX_MB, HASH_ALGORITMO
 from app.models import Documento
 from app.logger import logger
 
@@ -69,7 +69,7 @@ def _proximo_id(docs: list[dict]) -> int:
 
 
 def calcular_sha256(path: Path) -> str:
-    h = hashlib.sha256()
+    h = hashlib.new(HASH_ALGORITMO)
     try:
         with open(path, "rb") as f:
             for chunk in iter(lambda: f.read(8192), b""):
