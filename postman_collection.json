@@ -1,0 +1,762 @@
+{
+  "info": {
+    "_postman_id": "a91e57c2-84b1-4f1b-96cb-8b5e28a49c3e",
+    "name": "Cofre de Documentos Acadêmicos - API",
+    "description": "Coleção completa de endpoints para a API do Cofre Digital de Documentos Acadêmicos (FastAPI).\n\nInclui:\n- CRUD e download de documentos físicos e metadados\n- Pesquisa avançada combinatória (regras de atributos gerais e específicos)\n- Estatísticas do acervo e métricas de armazenamento\n- Verificação de integridade via cálculo de hash SHA-256 (individual e global)\n- Exportações em formatos tabulares e estruturados (CSV e XML)\n- Criação, listagem e download de backups compactados (.ZIP)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string",
+      "description": "URL base da API FastAPI"
+    }
+  ],
+  "item": [
+    {
+      "name": "Geral",
+      "description": "Endpoints gerais do sistema",
+      "item": [
+        {
+          "name": "Raiz / Informações da API",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                ""
+              ]
+            },
+            "description": "Retorna informações básicas do sistema, versão e link para documentação interativa (/docs)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Documentos",
+      "description": "Operações de gerenciamento, upload, consulta, atualização e exclusão de documentos acadêmicos.",
+      "item": [
+        {
+          "name": "Upload de Documento (F1)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "arquivo",
+                  "type": "file",
+                  "description": "Arquivo físico a ser enviado (ex: PDF, DOCX, JPG, TXT)",
+                  "src": []
+                },
+                {
+                  "key": "categoria",
+                  "value": "academico",
+                  "type": "text",
+                  "description": "Categoria do documento (ex: academico, administrativo, financeiro, outros)"
+                },
+                {
+                  "key": "aluno",
+                  "value": "Ian Silva Santos",
+                  "type": "text",
+                  "description": "Nome completo do aluno proprietário do documento"
+                },
+                {
+                  "key": "matricula",
+                  "value": "2023010198",
+                  "type": "text",
+                  "description": "Número de matrícula do estudante"
+                },
+                {
+                  "key": "curso",
+                  "value": "Ciência da Computação",
+                  "type": "text",
+                  "description": "Curso do estudante"
+                },
+                {
+                  "key": "semestre",
+                  "value": "2026.1",
+                  "type": "text",
+                  "description": "Semestre de referência (ex: 2026.1)"
+                },
+                {
+                  "key": "tipo_documento",
+                  "value": "tcc",
+                  "type": "text",
+                  "description": "Tipo do documento (ex: tcc, historico, certificado, declaracao, artigo, relatorio)"
+                },
+                {
+                  "key": "descricao",
+                  "value": "Trabalho de Conclusão de Curso focado em microsserviços e persistência em arquivos.",
+                  "type": "text",
+                  "description": "Descrição opcional detalhada do documento"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/documentos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "documentos"
+              ]
+            },
+            "description": "Realiza o upload do arquivo binário e indexação dos metadados com cálculo automático de hash SHA-256 e tipo MIME."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Documentos com Filtros (F2)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/documentos?categoria=academico&extensao=.pdf&curso=Ciência da Computação&semestre=2026.1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "documentos"
+              ],
+              "query": [
+                {
+                  "key": "categoria",
+                  "value": "academico",
+                  "description": "Filtra por categoria (ex: academico, administrativo)"
+                },
+                {
+                  "key": "extensao",
+                  "value": ".pdf",
+                  "description": "Filtra por extensão do arquivo (ex: .pdf, .docx, .jpg, .txt)"
+                },
+                {
+                  "key": "aluno",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Busca parcial por nome do aluno"
+                },
+                {
+                  "key": "autor",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Alias para busca por aluno/autor"
+                },
+                {
+                  "key": "matricula",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filtra por número de matrícula"
+                },
+                {
+                  "key": "semestre",
+                  "value": "2026.1",
+                  "description": "Filtra por semestre letivo"
+                },
+                {
+                  "key": "ano",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filtra por ano de referência ou upload"
+                },
+                {
+                  "key": "ano_publicacao",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Alias para busca por ano"
+                },
+                {
+                  "key": "tipo_documento",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filtra por tipo (ex: tcc, historico, artigo, certificado)"
+                },
+                {
+                  "key": "curso",
+                  "value": "Ciência da Computação",
+                  "description": "Busca parcial por curso"
+                },
+                {
+                  "key": "palavra_chave",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Busca textual ampla em nome, descrição e aluno"
+                },
+                {
+                  "key": "termo",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Alias para busca textual"
+                },
+                {
+                  "key": "descricao",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Busca parcial na descrição"
+                },
+                {
+                  "key": "nome_original",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Busca parcial no nome original do arquivo"
+                },
+                {
+                  "key": "titulo",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Alias para busca por nome original"
+                },
+                {
+                  "key": "tipo_mime",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filtra por tipo MIME (ex: application/pdf)"
+                }
+              ]
+            },
+            "description": "Retorna a listagem de todos os documentos cadastrados, permitindo múltiplos filtros combinados."
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar Documento por ID (F3)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/documentos/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "documentos",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID numérico do documento"
+                }
+              ]
+            },
+            "description": "Retorna todos os metadados cadastrados de um documento específico pelo seu identificador."
+          },
+          "response": []
+        },
+        {
+          "name": "Download do Arquivo Binário (F4)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/documentos/:id/download",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "documentos",
+                ":id",
+                "download"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID numérico do documento"
+                }
+              ]
+            },
+            "description": "Faz o download do arquivo físico armazenado com o Content-Type apropriado e nome original."
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar Metadados do Documento (F5)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoria\": \"academico\",\n  \"descricao\": \"Descrição atualizada com revisão e correção das referências bibliográficas.\",\n  \"aluno\": \"Ian Silva Santos\",\n  \"matricula\": \"2023010198\",\n  \"curso\": \"Ciência da Computação\",\n  \"semestre\": \"2026.2\",\n  \"tipo_documento\": \"tcc\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/documentos/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "documentos",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID numérico do documento"
+                }
+              ]
+            },
+            "description": "Atualiza campos mutáveis de metadados. Campos estruturais como id, sha256, tamanho e nome_armazenado permanecem protegidos."
+          },
+          "response": []
+        },
+        {
+          "name": "Excluir Documento (F6)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/documentos/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "documentos",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID numérico do documento a ser excluído"
+                }
+              ]
+            },
+            "description": "Remove permanentemente o arquivo binário do disco e exclui o registro correspondente no catálogo JSON."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Pesquisa Avançada",
+      "description": "Pesquisa combinatória com validação de regras de negócio estritas.",
+      "item": [
+        {
+          "name": "Pesquisar Documentos (F7 - Validação 1 Geral + 2 Específicos)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/documentos/pesquisar?categoria=academico&extensao=.pdf&curso=Ciência da Computação&semestre=2026.1&tipo_documento=artigo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "documentos",
+                "pesquisar"
+              ],
+              "query": [
+                {
+                  "key": "extensao",
+                  "value": ".pdf",
+                  "description": "[Geral] Extensão do arquivo (ex: .pdf, .docx, .jpg, .txt)"
+                },
+                {
+                  "key": "categoria",
+                  "value": "academico",
+                  "description": "[Geral] Categoria do documento"
+                },
+                {
+                  "key": "tipo_mime",
+                  "value": "",
+                  "disabled": true,
+                  "description": "[Geral] Tipo MIME do arquivo"
+                },
+                {
+                  "key": "descricao",
+                  "value": "",
+                  "disabled": true,
+                  "description": "[Geral] Termo contido na descrição"
+                },
+                {
+                  "key": "nome_original",
+                  "value": "",
+                  "disabled": true,
+                  "description": "[Geral] Termo contido no nome original"
+                },
+                {
+                  "key": "aluno",
+                  "value": "",
+                  "disabled": true,
+                  "description": "[Específico] Nome do estudante"
+                },
+                {
+                  "key": "matricula",
+                  "value": "",
+                  "disabled": true,
+                  "description": "[Específico] Matrícula do estudante"
+                },
+                {
+                  "key": "curso",
+                  "value": "Ciência da Computação",
+                  "description": "[Específico] Curso acadêmico"
+                },
+                {
+                  "key": "semestre",
+                  "value": "2026.1",
+                  "description": "[Específico] Semestre de referência"
+                },
+                {
+                  "key": "tipo_documento",
+                  "value": "artigo",
+                  "description": "[Específico] Tipo do documento acadêmico"
+                }
+              ]
+            },
+            "description": "Executa pesquisa combinatória exigindo no mínimo 1 atributo geral (extensao, categoria, descricao, tipo_mime, nome_original) e no mínimo 2 atributos específicos acadêmicos (aluno, matricula, curso, semestre, tipo_documento)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Estatísticas",
+      "description": "Métricas quantitativas e volumétricas do repositório.",
+      "item": [
+        {
+          "name": "Obter Estatísticas do Acervo (/estatisticas) (F8)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/estatisticas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "estatisticas"
+              ]
+            },
+            "description": "Retorna o total de documentos, espaço utilizado em bytes e formatado, além da distribuição por extensão, categoria, tipo, curso e semestre."
+          },
+          "response": []
+        },
+        {
+          "name": "Obter Estatísticas via Rota Documentos (/documentos/estatisticas)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/documentos/estatisticas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "documentos",
+                "estatisticas"
+              ]
+            },
+            "description": "Rota alternativa para consulta das estatísticas agregadas do acervo."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Integridade (SHA-256)",
+      "description": "Auditoria de integridade criptográfica contra corrupção e adulteração de arquivos.",
+      "item": [
+        {
+          "name": "Verificar Integridade Individual (F9)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/documentos/:id/integridade",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "documentos",
+                ":id",
+                "integridade"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID do documento para verificação do hash"
+                }
+              ]
+            },
+            "description": "Recalcula o SHA-256 do arquivo binário em tempo real e compara com o hash indexado no momento do upload (INTEGRO, ALTERADO ou AUSENTE)."
+          },
+          "response": []
+        },
+        {
+          "name": "Verificar Integridade Global (F10)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/integridade",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "integridade"
+              ]
+            },
+            "description": "Executa varredura completa de integridade em todos os documentos do acervo e retorna sumário estatístico e lista detalhada."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Exportações",
+      "description": "Geração de catálogos e relatórios em formatos abertos (CSV e XML).",
+      "item": [
+        {
+          "name": "Exportar Catálogo em CSV (F13)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/csv"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/exportar/csv",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "exportar",
+                "csv"
+              ]
+            },
+            "description": "Gera e salva o catálogo completo em CSV no diretório de exportações e o disponibiliza para streaming/download."
+          },
+          "response": []
+        },
+        {
+          "name": "Exportar Catálogo em XML (F16 - Tema 2)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/xml"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/documentos/exportar/xml?aluno=&semestre=2026.1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "documentos",
+                "exportar",
+                "xml"
+              ],
+              "query": [
+                {
+                  "key": "aluno",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filtra exportação por nome do aluno"
+                },
+                {
+                  "key": "semestre",
+                  "value": "2026.1",
+                  "description": "Filtra exportação por semestre letivo"
+                }
+              ]
+            },
+            "description": "Gera estrutura XML hierárquica e indentada com os metadados acadêmicos (Tema 2 - Documentos Acadêmicos)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Backup",
+      "description": "Criação, listagem e download de pacotes compactados de recuperação.",
+      "item": [
+        {
+          "name": "Criar Backup ZIP (F14)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/backup?categoria=academico&semestre=2026.1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "backup"
+              ],
+              "query": [
+                {
+                  "key": "categoria",
+                  "value": "academico",
+                  "description": "Filtrar documentos por categoria"
+                },
+                {
+                  "key": "curso",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filtrar documentos por curso"
+                },
+                {
+                  "key": "semestre",
+                  "value": "2026.1",
+                  "description": "Filtrar documentos por semestre"
+                },
+                {
+                  "key": "ano",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filtrar documentos por ano"
+                },
+                {
+                  "key": "tipo_documento",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filtrar documentos por tipo"
+                },
+                {
+                  "key": "aluno",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filtrar documentos por aluno"
+                }
+              ]
+            },
+            "description": "Empacota os binários filtrados, catálogo documentos.json, config.yaml e logs do sistema em um arquivo compactado .ZIP no diretório storage/backups/."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Backups Existentes (F15)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/backups",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "backups"
+              ]
+            },
+            "description": "Lista todos os arquivos de backup .ZIP criados no servidor com nome, tamanho em bytes e data de criação ISO 8601."
+          },
+          "response": []
+        },
+        {
+          "name": "Download de Arquivo de Backup (F15)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/backups/:nome",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "backups",
+                ":nome"
+              ],
+              "variable": [
+                {
+                  "key": "nome",
+                  "value": "backup_exemplo.zip",
+                  "description": "Nome do arquivo de backup (ex: backup_2026-10-09_120000.zip)"
+                }
+              ]
+            },
+            "description": "Realiza o download direto de um arquivo de backup .ZIP existente no servidor."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

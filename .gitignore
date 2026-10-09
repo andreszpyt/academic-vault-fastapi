@@ -5,6 +5,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.pyo
+*.pyd
 
 # =========================================
 # Ambientes Virtuais
@@ -42,19 +44,9 @@ venv.bak/
 logs/
 
 # =========================================
-# Armazenamento e Uploads Locais (Storage)
-# Ignora arquivos gerados/salvos, mantendo estrutura se houver .gitkeep
+# Armazenamento e Runtime Local (Storage)
 # =========================================
-/storage
-storage/logs/*
-!storage/logs/.gitkeep
-
-storage/documentos/*
-!storage/documentos/.gitkeep
-
-# Se os metadados forem dados de runtime locais, ignore-os também:
-# storage/metadata/*
-# !storage/metadata/.gitkeep
+storage/
 
 # =========================================
 # Testes, Cobertura e Análise Estática
@@ -69,9 +61,6 @@ coverage.xml
 .hypothesis/
 .mypy_cache/
 .ruff_cache/
-__pycache__/
-*.py[cod]
-/app/__pycache__/*
 
 # =========================================
 # Builds, Pacotes e Distribuição
@@ -92,7 +81,3 @@ dist/
 .Trashes
 ehthumbs.db
 Thumbs.db
-
-__pycache__/
-*.py[cod]
-.venv/
